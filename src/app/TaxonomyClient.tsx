@@ -245,7 +245,7 @@ export default function TaxonomyClient({ initialTreeData }: { initialTreeData: E
             <span className="text-sm font-medium text-gray-400 border-l border-gray-300 pl-3">CheloniaTrace</span>
           </div>
           <div className="flex items-center gap-4">
-            <a href="https://github.com" target="_blank" rel="noreferrer" className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors hidden sm:block">GitHub</a>
+            <a href="https://github.com/WhereAreMySOCKS/guiji-next" target="_blank" rel="noreferrer" className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors hidden sm:block">GitHub</a>
             <a href="https://iucn-tftsg.org/checklist/" target="_blank" rel="noreferrer" className="text-sm font-medium text-gray-500 hover:text-emerald-600 transition-colors hidden sm:block">
               {lang === 'zh' ? '数据源 (IUCN)' : 'Data Source'}
             </a>
