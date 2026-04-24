@@ -5,7 +5,7 @@ const locales = ['zh', 'en']
 const defaultLocale = 'zh'
 
 // 这里是关键修复：将导出的函数名从 middleware 改为 proxy
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // 1. 检查路径是否已经包含语言
