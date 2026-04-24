@@ -1,11 +1,5 @@
-import { Metadata } from 'next';
-import TaxonomyClient from './TaxonomyClient';
-import { TaxonomyNode } from './types';
-
-export const metadata: Metadata = {
-  title: '龟迹 CheloniaTrace | 全球龟鳖目图鉴',
-  description: '提供详尽的龟鳖目物种分类树、高清图鉴及拉丁学名查询。',
-};
+import TaxonomyClient from '../TaxonomyClient';
+import { TaxonomyNode } from '../types';
 
 async function getTaxonomyTree(): Promise<TaxonomyNode | null> {
   try {
@@ -20,13 +14,16 @@ async function getTaxonomyTree(): Promise<TaxonomyNode | null> {
   }
 }
 
-export default async function Home() {
+// 注意这里：params 改为 Promise，并使用 await 解包
+export default async function Home({ params }: { params: Promise<{ lang: string }> }) {
+  const resolvedParams = await params;
+  const lang = resolvedParams.lang === 'en' ? 'en' : 'zh';
   const treeData = await getTaxonomyTree();
 
   return (
     <>
       {treeData ? (
-        <TaxonomyClient initialTreeData={treeData} />
+        <TaxonomyClient initialTreeData={treeData} lang={lang} />
       ) : (
         <div className="min-h-screen flex items-center justify-center">
           <p className="text-red-500 font-medium">数据加载失败，请检查网络连接或接口状态。</p>

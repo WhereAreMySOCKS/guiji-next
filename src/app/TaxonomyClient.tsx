@@ -10,14 +10,10 @@ interface ExtendedNode extends TaxonomyNode {
   children?: ExtendedNode[];
 }
 
-// ------------------------------------------------------------------
-// 1. 高清画廊组件
-// ------------------------------------------------------------------
 const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: (p: number) => void }> = ({ pageNum, onClose, onNavigate }) => {
   const [zoom, setZoom] = useState(1);
   const [imgData, setImgData] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
@@ -74,11 +70,9 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
           <button onClick={onClose} className="p-2 bg-red-500/80 hover:bg-red-500 rounded-lg ml-4"><span className="material-symbols-outlined">close</span></button>
         </div>
       </div>
-      
       <div className="flex-1 relative w-full h-full flex justify-center items-center" onClick={e => e.stopPropagation()}>
         {loading ? <div className="text-white text-lg tracking-widest animate-pulse">高清渲染中...</div> : 
-          <div 
-            className={`absolute ${isDragging ? 'grabbing-cursor' : 'grab-cursor'} transition-transform duration-75`}
+          <div className={`absolute ${isDragging ? 'grabbing-cursor' : 'grab-cursor'} transition-transform duration-75`}
             style={{ transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`, transformOrigin: 'center' }}
             onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}
           >
@@ -90,9 +84,6 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
   );
 };
 
-// ------------------------------------------------------------------
-// 2. 高密度仪表盘风格 - 家族树递归节点
-// ------------------------------------------------------------------
 const getRankStyle = (rank: string) => {
   const styles: Record<string, string> = { 
     order: 'border-emerald-500 bg-emerald-50 text-emerald-700', 
@@ -104,24 +95,15 @@ const getRankStyle = (rank: string) => {
   return styles[rank.toLowerCase()] || 'border-gray-300 bg-gray-50 text-gray-700';
 };
 
-const TreeNode: React.FC<{ 
-  node: ExtendedNode; 
-  lang: 'zh' | 'en';
-  onOpenPdf: (p: number) => void; 
-  expandedNodes: Set<string>; 
-  searchQuery: string;
-}> = ({ node, lang, onOpenPdf, expandedNodes, searchQuery }) => {
+const TreeNode: React.FC<{ node: ExtendedNode; lang: 'zh' | 'en'; onOpenPdf: (p: number) => void; expandedNodes: Set<string>; searchQuery: string; }> = ({ node, lang, onOpenPdf, expandedNodes, searchQuery }) => {
   const hasChildren = !!(node.children && node.children.length > 0);
   const [isExpanded, setIsExpanded] = useState(expandedNodes.has(node.name) || node.rank.toLowerCase() === 'order');
   const nodeRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (expandedNodes.has(node.name)) setIsExpanded(true);
-  }, [expandedNodes, node.name]);
+  useEffect(() => { if (expandedNodes.has(node.name)) setIsExpanded(true); }, [expandedNodes, node.name]);
 
   const displayName = lang === 'zh' ? node.name : (node.english_name || node.name);
   
-  // 恢复严格匹配模式
   const isMatch = searchQuery.trim() !== '' && (
     node.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (node.english_name && node.english_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -139,27 +121,22 @@ const TreeNode: React.FC<{
   return (
     <li>
       <div className="node-content">
-        <div 
-          ref={nodeRef} 
-          className={`bg-white shadow-sm hover:shadow-lg rounded-lg border border-gray-200 w-[240px] flex flex-col overflow-hidden cursor-pointer transition-all duration-300 ${isMatch ? 'highlight-node' : ''}`}
+        <div ref={nodeRef} className={`bg-white shadow-sm hover:shadow-lg rounded-lg border border-gray-200 w-[240px] flex flex-col overflow-hidden cursor-pointer transition-all duration-300 ${isMatch ? 'highlight-node' : ''}`}
           onClick={(e) => { e.stopPropagation(); if (hasChildren) setIsExpanded(!isExpanded); }}
         >
           <div className={`px-3 py-1.5 flex justify-between items-center border-b border-gray-100 border-l-4 ${rankStyle}`}>
             <span className="text-[10px] uppercase font-bold tracking-wider">{node.rank}</span>
             {node.page && (
-              <button 
-                className="text-[10px] font-semibold text-emerald-600 hover:text-white bg-emerald-50 hover:bg-emerald-500 px-2 py-0.5 rounded border border-emerald-200 hover:border-emerald-500 transition-colors"
+              <button className="text-[10px] font-semibold text-emerald-600 hover:text-white bg-emerald-50 hover:bg-emerald-500 px-2 py-0.5 rounded border border-emerald-200 hover:border-emerald-500 transition-colors"
                 onClick={(e) => { e.stopPropagation(); onOpenPdf(node.page!); }}
               >
                 {lang === 'zh' ? '查看图鉴' : 'View'}
               </button>
             )}
           </div>
-          
           <div className="p-4 flex flex-col items-center text-center bg-white relative">
             <h3 className="text-[15px] font-bold text-gray-900 leading-tight w-full truncate" title={displayName}>{displayName}</h3>
             <p className="text-[11px] italic text-gray-500 mt-1 w-full truncate" title={node.latin_name}>{node.latin_name || 'Unknown'}</p>
-            
             {hasChildren && (
               <div className={`mt-2 -mb-2 text-gray-300 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
                 <span className="material-symbols-outlined text-[18px]">expand_more</span>
@@ -168,7 +145,6 @@ const TreeNode: React.FC<{
           </div>
         </div>
       </div>
-
       {hasChildren && isExpanded && (
         <ul>
           {node.children!.map((child) => (
@@ -180,18 +156,12 @@ const TreeNode: React.FC<{
   );
 };
 
-// ------------------------------------------------------------------
-// 3. 页面主容器
-// ------------------------------------------------------------------
-export default function TaxonomyClient({ initialTreeData }: { initialTreeData: ExtendedNode }) {
+export default function TaxonomyClient({ initialTreeData, lang }: { initialTreeData: ExtendedNode, lang: 'zh' | 'en' }) {
   const [mounted, setMounted] = useState(false);
   const [viewingPage, setViewingPage] = useState<number | null>(null);
   const [inputValue, setInputValue] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [lang, setLang] = useState<'zh' | 'en'>('zh');
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
-  
-  // 增加未找到的定制化弹窗状态
   const [notFoundAlert, setNotFoundAlert] = useState(false);
   const treeContainerRef = useRef<HTMLDivElement>(null);
 
@@ -218,18 +188,12 @@ export default function TaxonomyClient({ initialTreeData }: { initialTreeData: E
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setSearchQuery(inputValue);
-    
-    if (!inputValue.trim()) { 
-      setExpandedNodes(new Set()); 
-      return; 
-    }
-    
+    if (!inputValue.trim()) { setExpandedNodes(new Set()); return; }
     const path = searchTree(initialTreeData, inputValue);
     if (path) {
       setExpandedNodes(new Set(path));
       setTimeout(() => { treeContainerRef.current?.scrollIntoView({ behavior: 'smooth' }); }, 100);
     } else {
-      // 触发定制化错误弹窗，替换原生 alert()
       setNotFoundAlert(true);
     }
   };
@@ -250,13 +214,14 @@ export default function TaxonomyClient({ initialTreeData }: { initialTreeData: E
               {lang === 'zh' ? '数据源 (IUCN)' : 'Data Source'}
             </a>
             <div className="w-[1px] h-4 bg-gray-300 hidden sm:block"></div>
-            <button 
+            {/* 这里改成了 a 标签，直接切换路由 */}
+            <a 
+              href={lang === 'zh' ? '/en' : '/zh'}
               className="flex items-center gap-1 text-gray-500 hover:text-emerald-600 hover:bg-gray-50 px-2 py-1 rounded transition-colors font-medium cursor-pointer"
-              onClick={() => setLang(lang === 'zh' ? 'en' : 'zh')}
             >
               <span className="material-symbols-outlined text-[18px]">language</span>
               {lang === 'zh' ? 'EN' : '中文'}
-            </button>
+            </a>
           </div>
         </div>
       </header>
@@ -268,24 +233,15 @@ export default function TaxonomyClient({ initialTreeData }: { initialTreeData: E
         <p className="text-lg text-gray-500 max-w-2xl text-center mb-12">
           {lang === 'zh' ? '提供详尽的物种分类结构、高清图鉴及权威生态信息查询。' : 'The authoritative scientific resource for taxonomy and spatial distribution.'}
         </p>
-
         <form onSubmit={handleSearchSubmit} className="relative w-full max-w-3xl flex items-center shadow-md rounded-full bg-white border border-gray-200 focus-within:ring-2 focus-within:ring-emerald-500 transition-all overflow-hidden group">
-          <div className="pl-6 text-emerald-600 flex items-center">
-            <span className="material-symbols-outlined text-2xl">search</span>
-          </div>
-          <input 
-            className="w-full h-16 px-4 bg-transparent text-lg outline-none border-none placeholder-gray-400" 
-            type="text" 
+          <div className="pl-6 text-emerald-600 flex items-center"><span className="material-symbols-outlined text-2xl">search</span></div>
+          <input className="w-full h-16 px-4 bg-transparent text-lg outline-none border-none placeholder-gray-400" type="text" 
             placeholder={lang === 'zh' ? "请输入物种学名 (例如: Testudines)..." : "Search by Latin Name..."} 
-            value={inputValue} 
-            onChange={(e) => setInputValue(e.target.value)} 
-          />
+            value={inputValue} onChange={(e) => setInputValue(e.target.value)} />
           <button type="submit" className="h-16 px-8 bg-emerald-500 hover:bg-emerald-600 text-white font-medium text-lg transition-colors flex items-center gap-2 cursor-pointer shrink-0">
-            {lang === 'zh' ? '搜索' : 'Search'}
-            <span className="material-symbols-outlined text-sm font-bold">arrow_forward</span>
+            {lang === 'zh' ? '搜索' : 'Search'}<span className="material-symbols-outlined text-sm font-bold">arrow_forward</span>
           </button>
         </form>
-
         <div className="absolute bottom-10 flex flex-col items-center gap-2 text-gray-400 cursor-pointer hover:text-emerald-500 transition-colors" onClick={() => treeContainerRef.current?.scrollIntoView({ behavior: 'smooth' })}>
           <span className="text-xs uppercase tracking-widest font-semibold">{lang === 'zh' ? '下滑探索分类树' : 'Scroll down to explore'}</span>
           <span className="material-symbols-outlined animate-bounce text-2xl mt-1">keyboard_arrow_down</span>
@@ -304,23 +260,13 @@ export default function TaxonomyClient({ initialTreeData }: { initialTreeData: E
         </div>
       </div>
 
-      {/* 定制化错误弹窗 */}
       {notFoundAlert && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4" onClick={() => setNotFoundAlert(false)}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center transform transition-all" onClick={e => e.stopPropagation()}>
-            <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-5">
-              <span className="material-symbols-outlined text-3xl">search_off</span>
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">
-              {lang === 'zh' ? '未找到该学名' : 'Species Not Found'}
-            </h3>
-            <p className="text-gray-500 text-sm mb-8 leading-relaxed">
-              {lang === 'zh' ? '请检查您输入的学名拼写是否正确，或尝试输入更短的关键字。' : 'Please check your spelling or try a shorter keyword.'}
-            </p>
-            <button
-              onClick={() => setNotFoundAlert(false)}
-              className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-3 rounded-xl transition-colors shadow-sm"
-            >
+            <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-5"><span className="material-symbols-outlined text-3xl">search_off</span></div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">{lang === 'zh' ? '未找到该学名' : 'Species Not Found'}</h3>
+            <p className="text-gray-500 text-sm mb-8 leading-relaxed">{lang === 'zh' ? '请检查您输入的学名拼写是否正确，或尝试输入更短的关键字。' : 'Please check your spelling or try a shorter keyword.'}</p>
+            <button onClick={() => setNotFoundAlert(false)} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-3 rounded-xl transition-colors shadow-sm">
               {lang === 'zh' ? '我知道了' : 'Got it'}
             </button>
           </div>
