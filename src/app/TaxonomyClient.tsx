@@ -10,13 +10,28 @@ interface ExtendedNode extends TaxonomyNode {
   children?: ExtendedNode[];
 }
 
-const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: (p: number) => void }> = ({ pageNum, onClose, onNavigate }) => {
+// 新增：AI 导读数据接口
+interface PdfGuide {
+  id: string;
+  page_num: number;
+  raw_text?: string;
+  ai_content: string;
+  created_at: string;
+}
+
+const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: (p: number) => void; lang: 'zh' | 'en' }> = ({ pageNum, onClose, onNavigate, lang }) => {
   const [zoom, setZoom] = useState(1);
   const [imgData, setImgData] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
+
+  // AI 导读状态管理
+  const [showGuide, setShowGuide] = useState(false);
+  const [guideLoading, setGuideLoading] = useState(false);
+  const [guideData, setGuideData] = useState<PdfGuide | null>(null);
+  const [guideError, setGuideError] = useState<string | null>(null);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -28,10 +43,15 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
     return () => window.removeEventListener('keydown', handleKey);
   }, [onClose, onNavigate, pageNum]);
 
+  // 当页码变化时，重新获取图片并重置导读状态
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
     setPosition({ x: 0, y: 0 }); 
+    setShowGuide(false);
+    setGuideData(null);
+    setGuideError(null);
+
     fetch(`${API_BASE_URL}/api/v1/pdf/page/${pageNum}`)
       .then(res => res.blob())
       .then(blob => {
@@ -43,6 +63,33 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
       });
     return () => { isMounted = false; if (imgData) URL.revokeObjectURL(imgData); };
   }, [pageNum]);
+
+  // 拉取 AI 导读数据
+  const handleToggleGuide = async () => {
+    if (showGuide) {
+      setShowGuide(false);
+      return;
+    }
+    setShowGuide(true);
+    if (guideData) return; // 已有缓存数据则不重复请求
+
+    setGuideLoading(true);
+    setGuideError(null);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/pdf/page/${pageNum}/guide`);
+      if (res.status === 404) {
+        setGuideError(lang === 'zh' ? '该页暂未生成 AI 导读。' : 'AI Guide is not available for this page.');
+        return;
+      }
+      if (!res.ok) throw new Error('API Error');
+      const data = await res.json();
+      setGuideData(data);
+    } catch (e) {
+      setGuideError(lang === 'zh' ? '导读加载失败，请检查网络。' : 'Failed to load guide. Please try again.');
+    } finally {
+      setGuideLoading(false);
+    }
+  };
 
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
@@ -58,20 +105,66 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
     <div className="fixed inset-0 bg-black/95 z-[9999] flex flex-col overflow-hidden" onClick={onClose}>
       <div className="flex justify-between items-center px-6 py-4 bg-black/50 text-white z-20" onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-4">
-          <button onClick={() => onNavigate(pageNum - 1)} disabled={pageNum <= 1} className="hover:text-[#4edea3] disabled:opacity-30">◀ 上一页</button>
+          <button onClick={() => onNavigate(pageNum - 1)} disabled={pageNum <= 1} className="hover:text-[#4edea3] disabled:opacity-30">◀ {lang === 'zh' ? '上一页' : 'Prev'}</button>
           <span className="font-medium tracking-widest text-sm text-gray-300">PAGE {pageNum}</span>
-          <button onClick={() => onNavigate(pageNum + 1)} className="hover:text-[#4edea3]">下一页 ▶</button>
+          <button onClick={() => onNavigate(pageNum + 1)} className="hover:text-[#4edea3]">{lang === 'zh' ? '下一页' : 'Next'} ▶</button>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-400 mr-4">按住图片可自由拖拽</span>
-          <button onClick={() => {setZoom(1); setPosition({x:0, y:0})}} className="text-sm px-3 py-1 hover:bg-white/10 rounded-lg mr-2">还原位置</button>
+          {/* AI 导读触发按钮 */}
+          <button onClick={handleToggleGuide} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors mr-4 ${showGuide ? 'bg-emerald-500 text-white' : 'bg-white/10 hover:bg-white/20'}`}>
+            <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
+            {lang === 'zh' ? 'AI 导读' : 'AI Guide'}
+          </button>
+
+          <span className="text-xs text-gray-400 mr-4 hidden sm:inline">{lang === 'zh' ? '按住图片可自由拖拽' : 'Drag to move'}</span>
+          <button onClick={() => {setZoom(1); setPosition({x:0, y:0})}} className="text-sm px-3 py-1 hover:bg-white/10 rounded-lg mr-2">{lang === 'zh' ? '还原' : 'Reset'}</button>
           <button onClick={() => setZoom(z => z + 0.2)} className="p-2 hover:bg-white/10 rounded-lg"><span className="material-symbols-outlined">zoom_in</span></button>
           <button onClick={() => setZoom(z => Math.max(0.2, z - 0.2))} className="p-2 hover:bg-white/10 rounded-lg"><span className="material-symbols-outlined">zoom_out</span></button>
           <button onClick={onClose} className="p-2 bg-red-500/80 hover:bg-red-500 rounded-lg ml-4"><span className="material-symbols-outlined">close</span></button>
         </div>
       </div>
+
       <div className="flex-1 relative w-full h-full flex justify-center items-center" onClick={e => e.stopPropagation()}>
-        {loading ? <div className="text-white text-lg tracking-widest animate-pulse">高清渲染中...</div> : 
+        {/* 悬浮的 AI 导读面板 */}
+        {showGuide && (
+          <div className="absolute top-6 right-6 w-80 max-h-[80vh] overflow-y-auto bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl z-50 p-5 flex flex-col text-gray-800 border border-white/20 custom-scrollbar">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-lg flex items-center gap-2 text-emerald-700">
+                <span className="material-symbols-outlined text-xl">auto_awesome</span>
+                {lang === 'zh' ? 'AI 导读' : 'AI Guide'}
+              </h3>
+            </div>
+
+            {guideLoading ? (
+              <div className="flex flex-col items-center justify-center py-10 gap-3 text-gray-500">
+                <span className="material-symbols-outlined animate-spin text-3xl text-emerald-500">autorenew</span>
+                <span className="text-sm">{lang === 'zh' ? '正在解析...' : 'Analyzing...'}</span>
+              </div>
+            ) : guideError ? (
+              <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm leading-relaxed border border-red-100">
+                {guideError}
+              </div>
+            ) : guideData ? (
+              <div className="flex flex-col gap-4">
+                <div className="text-[15px] leading-relaxed font-medium">
+                  {guideData.ai_content}
+                </div>
+                {guideData.raw_text && (
+                  <div className="mt-2 pt-4 border-t border-gray-200">
+                    <p className="text-xs text-gray-400 font-semibold mb-2 tracking-widest uppercase">
+                      {lang === 'zh' ? '原文提取' : 'Extracted Text'}
+                    </p>
+                    <div className="bg-gray-50 text-gray-600 text-[13px] leading-relaxed p-3 rounded-xl max-h-40 overflow-y-auto custom-scrollbar border border-gray-100">
+                      {guideData.raw_text}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </div>
+        )}
+
+        {loading ? <div className="text-white text-lg tracking-widest animate-pulse">{lang === 'zh' ? '高清渲染中...' : 'Rendering...'}</div> : 
           <div className={`absolute ${isDragging ? 'grabbing-cursor' : 'grab-cursor'} transition-transform duration-75`}
             style={{ transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`, transformOrigin: 'center' }}
             onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}
@@ -214,7 +307,6 @@ export default function TaxonomyClient({ initialTreeData, lang }: { initialTreeD
               {lang === 'zh' ? '数据源 (IUCN)' : 'Data Source'}
             </a>
             <div className="w-[1px] h-4 bg-gray-300 hidden sm:block"></div>
-            {/* 这里改成了 a 标签，直接切换路由 */}
             <a 
               href={lang === 'zh' ? '/en' : '/zh'}
               className="flex items-center gap-1 text-gray-500 hover:text-emerald-600 hover:bg-gray-50 px-2 py-1 rounded transition-colors font-medium cursor-pointer"
@@ -273,7 +365,8 @@ export default function TaxonomyClient({ initialTreeData, lang }: { initialTreeD
         </div>
       )}
 
-      {viewingPage && <ImageViewer pageNum={viewingPage} onClose={() => setViewingPage(null)} onNavigate={setViewingPage} />}
+      {/* 修改点：挂载 ImageViewer 时向下传递 lang 属性 */}
+      {viewingPage && <ImageViewer pageNum={viewingPage} onClose={() => setViewingPage(null)} onNavigate={setViewingPage} lang={lang} />}
     </div>
   );
 }
