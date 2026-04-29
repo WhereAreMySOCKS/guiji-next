@@ -169,8 +169,10 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
             style={{ transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`, transformOrigin: 'center' }}
             onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}
           >
-            {imgData && <img src={imgData} className="block w-[100vw] max-w-none shadow-[0_0_50px_rgba(0,0,0,0.8)] bg-white select-none pointer-events-none" alt="Page" draggable={false} />}
-          </div>
+            {imgData && (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img src={imgData} className="block w-[100vw] max-w-none shadow-[0_0_50px_rgba(0,0,0,0.8)] bg-white select-none pointer-events-none" alt="Page" draggable={false} />
+            )}          </div>
         }
       </div>
     </div>
@@ -241,7 +243,7 @@ const TreeNode: React.FC<{ node: ExtendedNode; lang: 'zh' | 'en'; onOpenPdf: (p:
       {hasChildren && isExpanded && (
         <ul>
           {node.children!.map((child) => (
-            <TreeNode key={child.id} lang={lang} node={child} onOpenPdf={onOpenPdf} expandedNodes={expandedNodes} searchQuery={searchQuery} />
+            <TreeNode key={child.id} lang={lang} node={child as ExtendedNode} onOpenPdf={onOpenPdf} expandedNodes={expandedNodes} searchQuery={searchQuery} />
           ))}
         </ul>
       )}

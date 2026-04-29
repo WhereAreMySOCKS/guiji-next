@@ -35,6 +35,5 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: ['/((?!api|_next/static|_next/image|favicon.ico|.*\\.).*)'],
-  // 这是解决当前报错的核心：强制指定使用 Edge 运行时
-  runtime: 'edge', 
+  runtime: 'experimental-edge', 
 }
