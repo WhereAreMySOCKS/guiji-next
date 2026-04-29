@@ -10,12 +10,13 @@ interface ExtendedNode extends TaxonomyNode {
   children?: ExtendedNode[];
 }
 
-// 新增：AI 导读数据接口
+// 1. 更新：支持双语字段
 interface PdfGuide {
   id: string;
   page_num: number;
   raw_text?: string;
-  ai_content: string;
+  ai_content_zh: string;
+  ai_content_en: string;
   created_at: string;
 }
 
@@ -27,11 +28,13 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
 
-  // AI 导读状态管理
   const [showGuide, setShowGuide] = useState(false);
   const [guideLoading, setGuideLoading] = useState(false);
   const [guideData, setGuideData] = useState<PdfGuide | null>(null);
   const [guideError, setGuideError] = useState<string | null>(null);
+  
+  // 新增：用于记录当前选中的物种 Tab 索引
+  const [activeGuideIndex, setActiveGuideIndex] = useState(0);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -43,7 +46,6 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
     return () => window.removeEventListener('keydown', handleKey);
   }, [onClose, onNavigate, pageNum]);
 
-  // 当页码变化时，重新获取图片并重置导读状态
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
@@ -51,6 +53,7 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
     setShowGuide(false);
     setGuideData(null);
     setGuideError(null);
+    setActiveGuideIndex(0); // 切页时重置 Tab
 
     fetch(`${API_BASE_URL}/api/v1/pdf/page/${pageNum}`)
       .then(res => res.blob())
@@ -64,14 +67,13 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
     return () => { isMounted = false; if (imgData) URL.revokeObjectURL(imgData); };
   }, [pageNum]);
 
-  // 拉取 AI 导读数据
   const handleToggleGuide = async () => {
     if (showGuide) {
       setShowGuide(false);
       return;
     }
     setShowGuide(true);
-    if (guideData) return; // 已有缓存数据则不重复请求
+    if (guideData) return;
 
     setGuideLoading(true);
     setGuideError(null);
@@ -101,6 +103,22 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
   };
   const handleMouseUp = () => setIsDragging(false);
 
+  // 解析并获取当前语言的数据数组
+  const getParsedGuideData = () => {
+    if (!guideData) return [];
+    try {
+      const targetString = lang === 'zh' ? guideData.ai_content_zh : guideData.ai_content_en;
+      const parsed = JSON.parse(targetString);
+      return Array.isArray(parsed) ? parsed : [parsed];
+    } catch (e) {
+      console.error("JSON parse error:", e);
+      return [];
+    }
+  };
+
+  const parsedGuides = getParsedGuideData();
+  const currentGuide = parsedGuides[activeGuideIndex] || {};
+
   return (
     <div className="fixed inset-0 bg-black/95 z-[9999] flex flex-col overflow-hidden" onClick={onClose}>
       <div className="flex justify-between items-center px-6 py-4 bg-black/50 text-white z-20" onClick={e => e.stopPropagation()}>
@@ -110,9 +128,18 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
           <button onClick={() => onNavigate(pageNum + 1)} className="hover:text-[#4edea3]">{lang === 'zh' ? '下一页' : 'Next'} ▶</button>
         </div>
         <div className="flex items-center gap-2">
-          {/* AI 导读触发按钮 */}
-          <button onClick={handleToggleGuide} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors mr-4 ${showGuide ? 'bg-emerald-500 text-white' : 'bg-white/10 hover:bg-white/20'}`}>
-            <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
+          
+          {/* AI 导读触发按钮 - 增加了自定义图标的占位 */}
+          <button onClick={handleToggleGuide} className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium transition-all mr-4 shadow-sm ${showGuide ? 'bg-emerald-500 text-white' : 'bg-white/10 hover:bg-white/20'}`}>
+            {/* 👇 这里是为你预留的自定义 Icon 位置。修改 src 为你自己的图片路径，例如 /icons/ai-custom.png */}
+            <img src="/placeholder-icon.png" alt="AI Icon" className="w-5 h-5 object-contain" 
+                 onError={(e) => {
+                   // 如果图片没找到，临时显示默认 Material Icon 作为 fallback
+                   e.currentTarget.style.display = 'none';
+                   e.currentTarget.parentElement?.querySelector('.fallback-icon')?.classList.remove('hidden');
+                 }} 
+            />
+            <span className="fallback-icon material-symbols-outlined text-[18px] hidden">auto_awesome</span>
             {lang === 'zh' ? 'AI 导读' : 'AI Guide'}
           </button>
 
@@ -125,42 +152,97 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
       </div>
 
       <div className="flex-1 relative w-full h-full flex justify-center items-center" onClick={e => e.stopPropagation()}>
-        {/* 悬浮的 AI 导读面板 */}
+        
         {showGuide && (
-          <div className="absolute top-6 right-6 w-80 max-h-[80vh] overflow-y-auto bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl z-50 p-5 flex flex-col text-gray-800 border border-white/20 custom-scrollbar">
-            <div className="flex justify-between items-center mb-4">
+          // 面板加宽，适应性调整：手机上接近全宽，大屏上更宽
+          <div className="absolute top-6 right-6 w-[calc(100vw-48px)] sm:w-[400px] md:w-[480px] max-h-[80vh] flex flex-col bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl z-50 overflow-hidden text-gray-800 border border-white/40">
+            
+            {/* 固定的头部 */}
+            <div className="flex justify-between items-center p-5 pb-3 border-b border-gray-100 shrink-0">
               <h3 className="font-bold text-lg flex items-center gap-2 text-emerald-700">
                 <span className="material-symbols-outlined text-xl">auto_awesome</span>
-                {lang === 'zh' ? 'AI 导读' : 'AI Guide'}
+                {lang === 'zh' ? '内容提取与导读' : 'Content Analysis'}
               </h3>
             </div>
 
-            {guideLoading ? (
-              <div className="flex flex-col items-center justify-center py-10 gap-3 text-gray-500">
-                <span className="material-symbols-outlined animate-spin text-3xl text-emerald-500">autorenew</span>
-                <span className="text-sm">{lang === 'zh' ? '正在解析...' : 'Analyzing...'}</span>
-              </div>
-            ) : guideError ? (
-              <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm leading-relaxed border border-red-100">
-                {guideError}
-              </div>
-            ) : guideData ? (
-              <div className="flex flex-col gap-4">
-                <div className="text-[15px] leading-relaxed font-medium">
-                  {guideData.ai_content}
+            {/* 可滚动的内容区 */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-5 pt-3">
+              {guideLoading ? (
+                <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-500">
+                  <span className="material-symbols-outlined animate-spin text-3xl text-emerald-500">autorenew</span>
+                  <span className="text-sm">{lang === 'zh' ? '正在智能解析图鉴内容...' : 'Analyzing encyclopedia content...'}</span>
                 </div>
-                {guideData.raw_text && (
-                  <div className="mt-2 pt-4 border-t border-gray-200">
-                    <p className="text-xs text-gray-400 font-semibold mb-2 tracking-widest uppercase">
-                      {lang === 'zh' ? '原文提取' : 'Extracted Text'}
-                    </p>
-                    <div className="bg-gray-50 text-gray-600 text-[13px] leading-relaxed p-3 rounded-xl max-h-40 overflow-y-auto custom-scrollbar border border-gray-100">
-                      {guideData.raw_text}
+              ) : guideError ? (
+                <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm leading-relaxed border border-red-100">
+                  {guideError}
+                </div>
+              ) : guideData ? (
+                <div className="flex flex-col">
+                  
+                  {/* 多物种选项卡 Tabs */}
+                  {parsedGuides.length > 1 && (
+                    <div className="flex gap-2 overflow-x-auto pb-4 mb-4 border-b border-gray-100 custom-scrollbar shrink-0">
+                      {parsedGuides.map((guide, idx) => {
+                        const tabName = guide['学名'] || guide['Scientific Name'] || `${lang === 'zh' ? '物种' : 'Species'} ${idx + 1}`;
+                        return (
+                          <button
+                            key={idx}
+                            onClick={() => setActiveGuideIndex(idx)}
+                            className={`px-3 py-1.5 whitespace-nowrap text-[13px] font-bold rounded-lg transition-colors ${
+                              activeGuideIndex === idx 
+                                ? 'bg-emerald-100 text-emerald-800 shadow-sm border border-emerald-200' 
+                                : 'text-gray-500 hover:bg-gray-100 border border-transparent'
+                            }`}
+                          >
+                            {tabName}
+                          </button>
+                        );
+                      })}
                     </div>
-                  </div>
-                )}
-              </div>
-            ) : null}
+                  )}
+
+                  {/* 结构化内容渲染 */}
+                  {parsedGuides.length > 0 ? (
+                    <div className="flex flex-col gap-4">
+                      {Object.entries(currentGuide).map(([key, value], idx) => {
+                        // 过滤掉学名（因为通常已经显示在 Tab 上，或者作为顶层标题显示）
+                        if (key === '学名' || key === 'Scientific Name') return null;
+                        
+                        return (
+                          <div key={idx} className="text-[14px]">
+                            <h4 className="font-bold text-emerald-700 mb-1.5 flex items-center gap-1.5">
+                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
+                              {key}
+                            </h4>
+                            <p className="text-gray-600 leading-relaxed text-justify">
+                              {value as string}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    // 如果解析失败，显示原始字符串（降级处理）
+                    <div className="text-[14px] text-gray-600 leading-relaxed">
+                      {lang === 'zh' ? guideData.ai_content_zh : guideData.ai_content_en}
+                    </div>
+                  )}
+
+                  {/* 原始文本提取区 */}
+                  {guideData.raw_text && (
+                    <div className="mt-6 pt-4 border-t border-dashed border-gray-200">
+                      <p className="text-xs text-gray-400 font-semibold mb-2 tracking-widest uppercase flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[14px]">document_scanner</span>
+                        {lang === 'zh' ? 'OCR 原文识别片段' : 'OCR Extracted Text'}
+                      </p>
+                      <div className="bg-gray-50 text-gray-500 text-[12px] leading-relaxed p-3 rounded-xl max-h-32 overflow-y-auto custom-scrollbar border border-gray-100 shadow-inner font-mono">
+                        {guideData.raw_text}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : null}
+            </div>
           </div>
         )}
 
@@ -367,7 +449,6 @@ export default function TaxonomyClient({ initialTreeData, lang }: { initialTreeD
         </div>
       )}
 
-      {/* 修改点：挂载 ImageViewer 时向下传递 lang 属性 */}
       {viewingPage && <ImageViewer pageNum={viewingPage} onClose={() => setViewingPage(null)} onNavigate={setViewingPage} lang={lang} />}
     </div>
   );
