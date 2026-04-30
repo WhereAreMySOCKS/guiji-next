@@ -319,27 +319,26 @@ export default function TaxonomyClient({ initialTreeData, lang }: { initialTreeD
           </div>
           <div className="flex items-center gap-4">
             
-            {/* 👉 修改：集成了剪贴板与 mailto 唤起的高级邮件按钮 */}
-            <button 
-              onClick={handleEmailContact}
-              className="flex items-center gap-1.5 text-sm font-medium transition-colors hidden sm:flex px-2 py-1 rounded-md"
-              style={{
-                color: emailCopied ? '#10b981' : '#6b7280', 
-                backgroundColor: emailCopied ? '#ecfdf5' : 'transparent',
-              }}
-            >
-              {emailCopied ? (
-                <>
-                  <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                  {lang === 'zh' ? '邮箱已复制' : 'Copied!'}
-                </>
-              ) : (
-                <>
-                  <span className="material-symbols-outlined text-[18px]">mail</span>
-                  {lang === 'zh' ? '联系我' : 'Email Me'}
-                </>
-              )}
-            </button>
+          <button 
+            onClick={handleEmailContact}
+            className={`flex items-center gap-1.5 text-sm font-medium transition-all duration-300 hidden sm:flex px-2 py-1 rounded-md cursor-pointer ${
+              emailCopied 
+                ? 'text-emerald-500 bg-emerald-50 scale-95' 
+                : 'text-gray-500 hover:text-emerald-600 hover:bg-gray-50 active:scale-95'
+            }`}
+          >
+            {emailCopied ? (
+              <>
+                <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                {lang === 'zh' ? '邮箱已复制' : 'Copied!'}
+              </>
+            ) : (
+              <>
+                <span className="material-symbols-outlined text-[18px]">mail</span>
+                {lang === 'zh' ? '联系我' : 'Email Me'}
+              </>
+            )}
+          </button>
 
             <a href="https://iucn-tftsg.org/checklist/" target="_blank" rel="noreferrer" className="text-sm font-medium text-gray-500 hover:text-emerald-600 transition-colors hidden sm:block">
               {lang === 'zh' ? '数据源 (IUCN)' : 'Data Source'}
