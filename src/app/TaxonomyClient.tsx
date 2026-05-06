@@ -33,8 +33,6 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
   const [guideError, setGuideError] = useState<string | null>(null);
   
   const [activeGuideIndex, setActiveGuideIndex] = useState(0);
-  
-  // 新增：OCR 复制状态
   const [ocrCopied, setOcrCopied] = useState(false);
 
   useEffect(() => {
@@ -48,25 +46,17 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
   }, [onClose, onNavigate, pageNum]);
 
   useEffect(() => {
-    let isMounted = true;
     setLoading(true);
     setPosition({ x: 0, y: 0 }); 
     setShowGuide(false);
     setGuideData(null);
     setGuideError(null);
     setActiveGuideIndex(0); 
-    setOcrCopied(false); // 切换页面时重置复制状态
+    setOcrCopied(false);
+    setZoom(1);
 
-    fetch(`${API_BASE_URL}/api/v1/pdf/page/${pageNum}`)
-      .then(res => res.blob())
-      .then(blob => {
-        if (isMounted) {
-          setImgData(URL.createObjectURL(blob));
-          setLoading(false);
-          setZoom(1);
-        }
-      });
-    return () => { isMounted = false; if (imgData) URL.revokeObjectURL(imgData); };
+    // 取消了低效的 fetch blob，直接将图片的 URL 赋值给 img 标签
+    setImgData(`${API_BASE_URL}/api/v1/pdf/page/${pageNum}`);
   }, [pageNum]);
 
   const handleToggleGuide = async () => {
@@ -105,7 +95,6 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
   };
   const handleMouseUp = () => setIsDragging(false);
 
-  // 新增：处理 OCR 文本复制
   const handleCopyOCR = (e: React.MouseEvent) => {
     e.preventDefault();
     if (guideData?.raw_text) {
@@ -230,7 +219,6 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
                     </div>
                   )}
 
-                  {/* 替换点：使用复制按钮替代原文展示区块 */}
                   {guideData.raw_text && (
                     <div className="mt-6 pt-5 border-t border-dashed border-gray-200">
                       <button 
@@ -262,17 +250,16 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
           </div>
         )}
 
-        {loading ? <div className="text-white text-lg tracking-widest animate-pulse">{lang === 'zh' ? '高清渲染中...' : 'Rendering...'}</div> : 
-          <div className={`absolute ${isDragging ? 'grabbing-cursor' : 'grab-cursor'} transition-transform duration-75`}
-            style={{ transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`, transformOrigin: 'center' }}
-            onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}
-          >
-            {imgData && (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img src={imgData} className="block w-[100vw] max-w-none shadow-[0_0_50px_rgba(0,0,0,0.8)] bg-white select-none pointer-events-none" alt="Page" draggable={false} />
-            )}          
-          </div>
-        }
+        {loading && <div className="absolute z-10 text-white text-lg tracking-widest animate-pulse">{lang === 'zh' ? '高清渲染中...' : 'Rendering...'}</div>}
+        <div className={`absolute ${isDragging ? 'grabbing-cursor' : 'grab-cursor'} transition-transform duration-75`}
+          style={{ transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`, transformOrigin: 'center' }}
+          onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}
+        >
+          {imgData && (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src={imgData} onLoad={() => setLoading(false)} className="block w-[100vw] max-w-none shadow-[0_0_50px_rgba(0,0,0,0.8)] bg-white select-none pointer-events-none" alt="Page" draggable={false} />
+          )}          
+        </div>
       </div>
     </div>
   );
@@ -440,7 +427,6 @@ export default function TaxonomyClient({ initialTreeData, lang }: { initialTreeD
               )}
             </button>
 
-            {/* <a href="https://github.com/WhereAreMySOCKS/guiji-next" target="_blank" rel="noreferrer" className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors hidden sm:block">GitHub</a> */}
             <a href="https://iucn-tftsg.org/checklist/" target="_blank" rel="noreferrer" className="text-sm font-medium text-gray-500 hover:text-emerald-600 transition-colors hidden sm:block">
               {lang === 'zh' ? '数据源 (IUCN)' : 'Data Source'}
             </a>

@@ -1,8 +1,10 @@
 // FILE: src/app/[lang]/layout.tsx
 import type { Metadata } from "next";
+import { Inter } from 'next/font/google'; // 引入 next/font
 import "../globals.css";
 
-// 👉 1. 深度优化：双语词典强化 "AI 分析" 标签
+const inter = Inter({ subsets: ['latin'], display: 'swap' }); // 在服务端直接打包字体
+
 const dictionaries = {
   zh: {
     title: '龟迹 CheloniaTrace | 全球龟鳖目图鉴与 AI 智能导读',
@@ -16,7 +18,6 @@ const dictionaries = {
   }
 };
 
-// 👉 2. 深度优化：生成完整的高阶 Metadata 矩阵
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const resolvedParams = await params;
   const lang = resolvedParams.lang === 'en' ? 'en' : 'zh';
@@ -36,7 +37,6 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
         'en-US': `${baseUrl}/en`,
       },
     },
-    // 添加 Open Graph 协议 (适配微信、Facebook 等社交分享)
     openGraph: {
       title: dict.title,
       description: dict.description,
@@ -45,7 +45,6 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
       locale: lang === 'zh' ? 'zh_CN' : 'en_US',
       type: 'website',
     },
-    // 添加 Twitter 卡片协议
     twitter: {
       card: 'summary_large_image',
       title: dict.title,
@@ -65,12 +64,11 @@ export default async function RootLayout({
   const lang = resolvedParams.lang === 'en' ? 'en' : 'zh';
   
   return (
-    <html lang={lang}>
+    <html lang={lang} className={inter.className}>
       <head>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+        {/* 已经移除了阻塞渲染的外部 Google Fonts (Inter) 的 <link> 请求 */}
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
         
-        {/* 👉 3. 完整 JSON-LD 结构化数据 */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
