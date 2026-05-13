@@ -35,6 +35,20 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
   const [activeGuideIndex, setActiveGuideIndex] = useState(0);
   const [ocrCopied, setOcrCopied] = useState(false);
 
+  const [toolbarVisible, setToolbarVisible] = useState(true);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const resetHideTimer = useCallback(() => {
+    setToolbarVisible(true);
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    hideTimerRef.current = setTimeout(() => setToolbarVisible(false), 3000);
+  }, []);
+
+  useEffect(() => {
+    resetHideTimer();
+    return () => { if (hideTimerRef.current) clearTimeout(hideTimerRef.current); };
+  }, [pageNum, resetHideTimer]);
+
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -88,6 +102,7 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
     setStartPos({ x: e.clientX - position.x, y: e.clientY - position.y });
+    resetHideTimer();
   };
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging) return;
@@ -104,6 +119,7 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    resetHideTimer();
     if (e.touches.length === 2) {
       setIsDragging(false);
       pinchRef.current = { startDist: getTouchDist(e.touches), startZoom: zoom };
@@ -156,30 +172,31 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
 
   return (
     <div className="fixed inset-0 bg-black/95 z-[9999] flex flex-col overflow-hidden overscroll-none" onClick={onClose}>
-      <div className="bg-black/50 text-white z-20" onClick={e => e.stopPropagation()}>
-        {/* Top row: page nav + close */}
+      <div
+        className={`bg-black/50 text-white z-20 transition-transform duration-300 ${toolbarVisible ? 'translate-y-0' : '-translate-y-full'}`}
+        onClick={e => { e.stopPropagation(); resetHideTimer(); }}
+      >
         <div className="flex items-center justify-between px-3 sm:px-6 py-2 sm:py-3">
           <div className="flex items-center gap-2 sm:gap-4">
-            <button onClick={() => onNavigate(pageNum - 1)} disabled={pageNum <= 1} className="text-sm sm:text-base hover:text-[#4edea3] disabled:opacity-30 px-2 py-1">◀</button>
+            <button onClick={() => { onNavigate(pageNum - 1); resetHideTimer(); }} disabled={pageNum <= 1} className="text-sm sm:text-base hover:text-[#4edea3] disabled:opacity-30 px-2 py-1">◀</button>
             <span className="font-mono tracking-widest text-xs sm:text-sm text-gray-300 min-w-[60px] text-center">P{pageNum}</span>
-            <button onClick={() => onNavigate(pageNum + 1)} className="text-sm sm:text-base hover:text-[#4edea3] px-2 py-1">▶</button>
+            <button onClick={() => { onNavigate(pageNum + 1); resetHideTimer(); }} className="text-sm sm:text-base hover:text-[#4edea3] px-2 py-1">▶</button>
           </div>
           <button onClick={onClose} className="p-2 bg-red-500/80 hover:bg-red-500 rounded-lg"><span className="material-symbols-outlined text-[20px]">close</span></button>
         </div>
-        {/* Bottom row: zoom & guide controls */}
         <div className="flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-6 pb-2 sm:pb-3">
-          <button onClick={handleToggleGuide} className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all shadow-sm ${showGuide ? 'bg-emerald-500 text-white' : 'bg-white/10 hover:bg-white/20'}`}>
+          <button onClick={() => { handleToggleGuide(); resetHideTimer(); }} className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all shadow-sm ${showGuide ? 'bg-emerald-500 text-white' : 'bg-white/10 hover:bg-white/20'}`}>
             <span className="material-symbols-outlined text-[16px] sm:text-[18px]">auto_awesome</span>
             <span className="hidden sm:inline">{lang === 'zh' ? 'AI 导读' : 'AI Guide'}</span>
           </button>
           <span className="text-[10px] text-gray-400 hidden sm:inline mx-1">{lang === 'zh' ? '拖拽/捏合移动' : 'Drag/pinch to move'}</span>
-          <button onClick={() => {setZoom(1); setPosition({x:0, y:0})}} className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 hover:bg-white/10 rounded-lg">{lang === 'zh' ? '还原' : 'Reset'}</button>
-          <button onClick={() => setZoom(z => Math.min(5, z + 0.3))} className="p-1.5 sm:p-2 hover:bg-white/10 rounded-lg"><span className="material-symbols-outlined text-[18px] sm:text-[20px]">zoom_in</span></button>
-          <button onClick={() => setZoom(z => Math.max(0.5, z - 0.3))} className="p-1.5 sm:p-2 hover:bg-white/10 rounded-lg"><span className="material-symbols-outlined text-[18px] sm:text-[20px]">zoom_out</span></button>
+          <button onClick={() => {setZoom(1); setPosition({x:0, y:0}); resetHideTimer();}} className="hidden sm:inline text-xs sm:text-sm px-2 sm:px-3 py-1.5 hover:bg-white/10 rounded-lg">{lang === 'zh' ? '还原' : 'Reset'}</button>
+          <button onClick={() => { setZoom(z => Math.min(5, z + 0.3)); resetHideTimer(); }} className="hidden sm:inline p-1.5 sm:p-2 hover:bg-white/10 rounded-lg"><span className="material-symbols-outlined text-[18px] sm:text-[20px]">zoom_in</span></button>
+          <button onClick={() => { setZoom(z => Math.max(0.5, z - 0.3)); resetHideTimer(); }} className="hidden sm:inline p-1.5 sm:p-2 hover:bg-white/10 rounded-lg"><span className="material-symbols-outlined text-[18px] sm:text-[20px]">zoom_out</span></button>
         </div>
       </div>
 
-      <div className="flex-1 relative w-full h-full flex justify-center items-center" onClick={e => e.stopPropagation()}>
+      <div className="flex-1 relative w-full h-full flex justify-center items-center" onClick={e => { e.stopPropagation(); resetHideTimer(); }}>
         
         {showGuide && (
           <div className="absolute top-6 right-6 w-[calc(100vw-48px)] sm:w-[400px] md:w-[480px] max-h-[80vh] flex flex-col bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl z-50 overflow-hidden text-gray-800 border border-white/40">
@@ -324,7 +341,10 @@ const TreeNode: React.FC<{ node: ExtendedNode; lang: 'zh' | 'en'; onOpenPdf: (p:
 
   useEffect(() => {
     if (isMatch && nodeRef.current) {
-      setTimeout(() => { nodeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' }); }, 300);
+      // 移动端渲染较慢，延长延时确保 DOM 已更新
+      setTimeout(() => {
+        nodeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }, 500);
     }
   }, [isMatch]);
 
@@ -408,7 +428,26 @@ export default function TaxonomyClient({ initialTreeData, lang }: { initialTreeD
     const path = searchTree(initialTreeData, inputValue);
     if (path) {
       setExpandedNodes(new Set(path));
-      setTimeout(() => { treeContainerRef.current?.scrollIntoView({ behavior: 'smooth' }); }, 100);
+      // 延迟滚动，等 React 渲染完展开的树节点
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          const treeSection = treeContainerRef.current;
+          if (!treeSection) return;
+          // 先滚动页面到树区域
+          treeSection.scrollIntoView({ behavior: 'smooth' });
+          // 再定位高亮节点，水平滚动到可见位置
+          setTimeout(() => {
+            const highlighted = treeSection.querySelector('.highlight-node') as HTMLElement | null;
+            if (!highlighted) return;
+            const scrollContainer = highlighted.closest('.overflow-x-auto') as HTMLElement | null;
+            if (!scrollContainer) return;
+            const nodeRect = highlighted.getBoundingClientRect();
+            const containerRect = scrollContainer.getBoundingClientRect();
+            const targetLeft = scrollContainer.scrollLeft + nodeRect.left - containerRect.left - containerRect.width / 2 + nodeRect.width / 2;
+            scrollContainer.scrollTo({ left: Math.max(0, targetLeft), behavior: 'smooth' });
+          }, 400);
+        }, 200);
+      });
     } else {
       setNotFoundAlert(true);
     }
@@ -533,7 +572,7 @@ export default function TaxonomyClient({ initialTreeData, lang }: { initialTreeD
       <div ref={treeContainerRef} className="w-full bg-[#f8f9fa] border-t border-gray-200 pt-10 sm:pt-16 flex flex-col min-h-screen">
         <div className="w-full overflow-x-auto custom-scrollbar text-center flex-1 pb-16">
           <div className="inline-block min-w-full px-4 md:px-10">
-            <div className="org-tree">
+            <div className={`org-tree ${searchQuery ? 'search-active' : ''}`}>
               <ul>
                 <TreeNode node={initialTreeData} lang={lang} onOpenPdf={setViewingPage} expandedNodes={expandedNodes} searchQuery={searchQuery} />
               </ul>
