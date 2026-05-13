@@ -95,6 +95,17 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
   };
   const handleMouseUp = () => setIsDragging(false);
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length !== 1) return;
+    setIsDragging(true);
+    setStartPos({ x: e.touches[0].clientX - position.x, y: e.touches[0].clientY - position.y });
+  };
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging || e.touches.length !== 1) return;
+    setPosition({ x: e.touches[0].clientX - startPos.x, y: e.touches[0].clientY - startPos.y });
+  };
+  const handleTouchEnd = () => setIsDragging(false);
+
   const handleCopyOCR = (e: React.MouseEvent) => {
     e.preventDefault();
     if (guideData?.raw_text) {
@@ -122,7 +133,7 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
 
   return (
     <div className="fixed inset-0 bg-black/95 z-[9999] flex flex-col overflow-hidden" onClick={onClose}>
-      <div className="flex justify-between items-center px-6 py-4 bg-black/50 text-white z-20" onClick={e => e.stopPropagation()}>
+      <div className="flex justify-between items-center px-3 sm:px-6 py-3 sm:py-4 bg-black/50 text-white z-20 gap-1" onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-4">
           <button onClick={() => onNavigate(pageNum - 1)} disabled={pageNum <= 1} className="hover:text-[#4edea3] disabled:opacity-30">◀ {lang === 'zh' ? '上一页' : 'Prev'}</button>
           <span className="font-medium tracking-widest text-sm text-gray-300">PAGE {pageNum}</span>
@@ -252,8 +263,9 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
 
         {loading && <div className="absolute z-10 text-white text-lg tracking-widest animate-pulse">{lang === 'zh' ? '高清渲染中...' : 'Rendering...'}</div>}
         <div className={`absolute ${isDragging ? 'grabbing-cursor' : 'grab-cursor'} transition-transform duration-75`}
-          style={{ transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`, transformOrigin: 'center' }}
+          style={{ transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`, transformOrigin: 'center', touchAction: 'none' }}
           onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}
+          onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}
         >
           {imgData && (
             /* eslint-disable-next-line @next/next/no-img-element */
@@ -302,7 +314,7 @@ const TreeNode: React.FC<{ node: ExtendedNode; lang: 'zh' | 'en'; onOpenPdf: (p:
   return (
     <li>
       <div className="node-content">
-        <div ref={nodeRef} className={`bg-white shadow-sm hover:shadow-lg rounded-lg border border-gray-200 w-[240px] flex flex-col overflow-hidden cursor-pointer transition-all duration-300 ${isMatch ? 'highlight-node' : ''}`}
+        <div ref={nodeRef} className={`bg-white shadow-sm hover:shadow-lg rounded-lg border border-gray-200 w-[170px] sm:w-[220px] md:w-[240px] flex flex-col overflow-hidden cursor-pointer transition-all duration-300 ${isMatch ? 'highlight-node' : ''}`}
           onClick={(e) => { e.stopPropagation(); if (hasChildren) setIsExpanded(!isExpanded); }}
         >
           <div className={`px-3 py-1.5 flex justify-between items-center border-b border-gray-100 border-l-4 ${rankStyle}`}>
@@ -346,7 +358,8 @@ export default function TaxonomyClient({ initialTreeData, lang }: { initialTreeD
   const [notFoundAlert, setNotFoundAlert] = useState(false);
   
   const [emailCopied, setEmailCopied] = useState(false);
-  
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   const treeContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setMounted(true); }, []);
@@ -399,10 +412,10 @@ export default function TaxonomyClient({ initialTreeData, lang }: { initialTreeD
   return (
     <div className="min-h-screen flex flex-col relative bg-[#f8f9fa] overflow-x-hidden text-[#191c1d]">
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm">
-        <div className="flex justify-between items-center h-16 px-6 md:px-12 w-full">
+        <div className="flex justify-between items-center h-14 sm:h-16 px-4 sm:px-6 md:px-12 w-full">
           <div className="flex items-center gap-3">
-            <span className="text-2xl font-bold tracking-tight text-emerald-600">龟迹</span>
-            <span className="text-sm font-medium text-gray-400 border-l border-gray-300 pl-3">CheloniaTrace</span>
+            <span className="text-xl sm:text-2xl font-bold tracking-tight text-emerald-600">龟迹</span>
+            <span className="text-xs sm:text-sm font-medium text-gray-400 border-l border-gray-300 pl-2 sm:pl-3 hidden sm:inline">CheloniaTrace</span>
           </div>
           <div className="flex items-center gap-4">
             
@@ -431,7 +444,41 @@ export default function TaxonomyClient({ initialTreeData, lang }: { initialTreeD
               {lang === 'zh' ? '数据源 (IUCN)' : 'Data Source'}
             </a>
             <div className="w-[1px] h-4 bg-gray-300 hidden sm:block"></div>
-            <a 
+
+            <div className="relative sm:hidden">
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="flex items-center justify-center w-9 h-9 rounded-full hover:bg-gray-100 text-gray-500 transition-colors cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[22px]">more_vert</span>
+              </button>
+              {mobileMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setMobileMenuOpen(false)}></div>
+                  <div className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-xl border border-gray-100 py-2 min-w-[160px] z-20">
+                    <button
+                      onClick={(e) => { handleEmailContact(e); setMobileMenuOpen(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-600 hover:bg-gray-50 hover:text-emerald-600 transition-colors text-left cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">mail</span>
+                      {lang === 'zh' ? '联系我' : 'Email Me'}
+                    </button>
+                    <a
+                      href="https://iucn-tftsg.org/checklist/"
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-600 hover:bg-gray-50 hover:text-emerald-600 transition-colors no-underline"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">dataset</span>
+                      {lang === 'zh' ? '数据源 (IUCN)' : 'Data Source'}
+                    </a>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <a
               href={lang === 'zh' ? '/en' : '/zh'}
               className="flex items-center gap-1 text-gray-500 hover:text-emerald-600 hover:bg-gray-50 px-2 py-1 rounded transition-colors font-medium cursor-pointer"
             >
@@ -442,19 +489,19 @@ export default function TaxonomyClient({ initialTreeData, lang }: { initialTreeD
         </div>
       </header>
 
-      <div className="relative z-10 w-full min-h-[calc(100vh-64px)] flex flex-col items-center justify-center px-6 pb-20">
-        <h1 className="text-4xl md:text-5xl font-extrabold text-[#191c1d] mb-6 text-center tracking-tight">
+      <div className="relative z-10 w-full min-h-[calc(100vh-64px)] flex flex-col items-center justify-center px-4 sm:px-6 pb-16 sm:pb-20">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-[#191c1d] mb-4 sm:mb-6 text-center tracking-tight">
           {lang === 'zh' ? '全球龟鳖目图鉴' : 'Global Testudines Database'}
         </h1>
-        <p className="text-lg text-gray-500 max-w-2xl text-center mb-12">
+        <p className="text-base sm:text-lg text-gray-500 max-w-2xl text-center mb-8 sm:mb-12 px-2">
           {lang === 'zh' ? '提供详尽的物种分类结构、高清图鉴及权威生态信息查询。' : 'The authoritative scientific resource for taxonomy and spatial distribution.'}
         </p>
         <form onSubmit={handleSearchSubmit} className="relative w-full max-w-3xl flex items-center shadow-md rounded-full bg-white border border-gray-200 focus-within:ring-2 focus-within:ring-emerald-500 transition-all overflow-hidden group">
           <div className="pl-6 text-emerald-600 flex items-center"><span className="material-symbols-outlined text-2xl">search</span></div>
-          <input className="w-full h-16 px-4 bg-transparent text-lg outline-none border-none placeholder-gray-400" type="text" 
+          <input className="w-full h-14 md:h-16 px-4 bg-transparent text-base md:text-lg outline-none border-none placeholder-gray-400" type="text"
             placeholder={lang === 'zh' ? "请输入物种学名 (例如: Testudines)..." : "Search by Latin Name..."} 
             value={inputValue} onChange={(e) => setInputValue(e.target.value)} />
-          <button type="submit" className="h-16 px-8 bg-emerald-500 hover:bg-emerald-600 text-white font-medium text-lg transition-colors flex items-center gap-2 cursor-pointer shrink-0">
+          <button type="submit" className="h-14 md:h-16 px-6 md:px-8 bg-emerald-500 hover:bg-emerald-600 text-white font-medium text-base md:text-lg transition-colors flex items-center gap-2 cursor-pointer shrink-0">
             {lang === 'zh' ? '搜索' : 'Search'}<span className="material-symbols-outlined text-sm font-bold">arrow_forward</span>
           </button>
         </form>
@@ -464,9 +511,9 @@ export default function TaxonomyClient({ initialTreeData, lang }: { initialTreeD
         </div>
       </div>
 
-      <div ref={treeContainerRef} className="w-full bg-[#f8f9fa] border-t border-gray-200 pt-16 flex flex-col min-h-screen">
+      <div ref={treeContainerRef} className="w-full bg-[#f8f9fa] border-t border-gray-200 pt-10 sm:pt-16 flex flex-col min-h-screen">
         <div className="w-full overflow-x-auto custom-scrollbar text-center flex-1 pb-16">
-          <div className="inline-block min-w-full px-10">
+          <div className="inline-block min-w-full px-4 md:px-10">
             <div className="org-tree">
               <ul>
                 <TreeNode node={initialTreeData} lang={lang} onOpenPdf={setViewingPage} expandedNodes={expandedNodes} searchQuery={searchQuery} />
