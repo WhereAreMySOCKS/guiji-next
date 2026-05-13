@@ -95,16 +95,39 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
   };
   const handleMouseUp = () => setIsDragging(false);
 
+  const pinchRef = useRef<{ startDist: number; startZoom: number }>({ startDist: 0, startZoom: 1 });
+
+  const getTouchDist = (touches: React.TouchList) => {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (e.touches.length !== 1) return;
-    setIsDragging(true);
-    setStartPos({ x: e.touches[0].clientX - position.x, y: e.touches[0].clientY - position.y });
+    if (e.touches.length === 2) {
+      setIsDragging(false);
+      pinchRef.current = { startDist: getTouchDist(e.touches), startZoom: zoom };
+    } else if (e.touches.length === 1) {
+      setIsDragging(true);
+      setStartPos({ x: e.touches[0].clientX - position.x, y: e.touches[0].clientY - position.y });
+    }
   };
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging || e.touches.length !== 1) return;
-    setPosition({ x: e.touches[0].clientX - startPos.x, y: e.touches[0].clientY - startPos.y });
+    if (e.touches.length === 2) {
+      const ratio = getTouchDist(e.touches) / pinchRef.current.startDist;
+      setZoom(Math.max(0.5, Math.min(5, pinchRef.current.startZoom * ratio)));
+    } else if (isDragging && e.touches.length === 1) {
+      setPosition({ x: e.touches[0].clientX - startPos.x, y: e.touches[0].clientY - startPos.y });
+    }
   };
-  const handleTouchEnd = () => setIsDragging(false);
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (e.touches.length === 0) {
+      setIsDragging(false);
+    } else if (e.touches.length === 1) {
+      setIsDragging(true);
+      setStartPos({ x: e.touches[0].clientX - position.x, y: e.touches[0].clientY - position.y });
+    }
+  };
 
   const handleCopyOCR = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -132,31 +155,27 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
   const currentGuide = parsedGuides[activeGuideIndex] || {};
 
   return (
-    <div className="fixed inset-0 bg-black/95 z-[9999] flex flex-col overflow-hidden" onClick={onClose}>
-      <div className="flex justify-between items-center px-3 sm:px-6 py-3 sm:py-4 bg-black/50 text-white z-20 gap-1" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center gap-4">
-          <button onClick={() => onNavigate(pageNum - 1)} disabled={pageNum <= 1} className="hover:text-[#4edea3] disabled:opacity-30">◀ {lang === 'zh' ? '上一页' : 'Prev'}</button>
-          <span className="font-medium tracking-widest text-sm text-gray-300">PAGE {pageNum}</span>
-          <button onClick={() => onNavigate(pageNum + 1)} className="hover:text-[#4edea3]">{lang === 'zh' ? '下一页' : 'Next'} ▶</button>
+    <div className="fixed inset-0 bg-black/95 z-[9999] flex flex-col overflow-hidden overscroll-none" onClick={onClose}>
+      <div className="bg-black/50 text-white z-20" onClick={e => e.stopPropagation()}>
+        {/* Top row: page nav + close */}
+        <div className="flex items-center justify-between px-3 sm:px-6 py-2 sm:py-3">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <button onClick={() => onNavigate(pageNum - 1)} disabled={pageNum <= 1} className="text-sm sm:text-base hover:text-[#4edea3] disabled:opacity-30 px-2 py-1">◀</button>
+            <span className="font-mono tracking-widest text-xs sm:text-sm text-gray-300 min-w-[60px] text-center">P{pageNum}</span>
+            <button onClick={() => onNavigate(pageNum + 1)} className="text-sm sm:text-base hover:text-[#4edea3] px-2 py-1">▶</button>
+          </div>
+          <button onClick={onClose} className="p-2 bg-red-500/80 hover:bg-red-500 rounded-lg"><span className="material-symbols-outlined text-[20px]">close</span></button>
         </div>
-        <div className="flex items-center gap-2">
-          
-          <button onClick={handleToggleGuide} className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium transition-all mr-4 shadow-sm ${showGuide ? 'bg-emerald-500 text-white' : 'bg-white/10 hover:bg-white/20'}`}>
-            <img src="/placeholder-icon.png" alt="AI Icon" className="w-5 h-5 object-contain" 
-                 onError={(e) => {
-                   e.currentTarget.style.display = 'none';
-                   e.currentTarget.parentElement?.querySelector('.fallback-icon')?.classList.remove('hidden');
-                 }} 
-            />
-            <span className="fallback-icon material-symbols-outlined text-[18px] hidden">auto_awesome</span>
-            {lang === 'zh' ? 'AI 导读' : 'AI Guide'}
+        {/* Bottom row: zoom & guide controls */}
+        <div className="flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-6 pb-2 sm:pb-3">
+          <button onClick={handleToggleGuide} className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all shadow-sm ${showGuide ? 'bg-emerald-500 text-white' : 'bg-white/10 hover:bg-white/20'}`}>
+            <span className="material-symbols-outlined text-[16px] sm:text-[18px]">auto_awesome</span>
+            <span className="hidden sm:inline">{lang === 'zh' ? 'AI 导读' : 'AI Guide'}</span>
           </button>
-
-          <span className="text-xs text-gray-400 mr-4 hidden sm:inline">{lang === 'zh' ? '按住图片可自由拖拽' : 'Drag to move'}</span>
-          <button onClick={() => {setZoom(1); setPosition({x:0, y:0})}} className="text-sm px-3 py-1 hover:bg-white/10 rounded-lg mr-2">{lang === 'zh' ? '还原' : 'Reset'}</button>
-          <button onClick={() => setZoom(z => z + 0.2)} className="p-2 hover:bg-white/10 rounded-lg"><span className="material-symbols-outlined">zoom_in</span></button>
-          <button onClick={() => setZoom(z => Math.max(0.2, z - 0.2))} className="p-2 hover:bg-white/10 rounded-lg"><span className="material-symbols-outlined">zoom_out</span></button>
-          <button onClick={onClose} className="p-2 bg-red-500/80 hover:bg-red-500 rounded-lg ml-4"><span className="material-symbols-outlined">close</span></button>
+          <span className="text-[10px] text-gray-400 hidden sm:inline mx-1">{lang === 'zh' ? '拖拽/捏合移动' : 'Drag/pinch to move'}</span>
+          <button onClick={() => {setZoom(1); setPosition({x:0, y:0})}} className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 hover:bg-white/10 rounded-lg">{lang === 'zh' ? '还原' : 'Reset'}</button>
+          <button onClick={() => setZoom(z => Math.min(5, z + 0.3))} className="p-1.5 sm:p-2 hover:bg-white/10 rounded-lg"><span className="material-symbols-outlined text-[18px] sm:text-[20px]">zoom_in</span></button>
+          <button onClick={() => setZoom(z => Math.max(0.5, z - 0.3))} className="p-1.5 sm:p-2 hover:bg-white/10 rounded-lg"><span className="material-symbols-outlined text-[18px] sm:text-[20px]">zoom_out</span></button>
         </div>
       </div>
 
@@ -269,7 +288,7 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
         >
           {imgData && (
             /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={imgData} onLoad={() => setLoading(false)} className="block w-[100vw] max-w-none shadow-[0_0_50px_rgba(0,0,0,0.8)] bg-white select-none pointer-events-none" alt="Page" draggable={false} />
+            <img src={imgData} onLoad={() => setLoading(false)} className="block w-[95vw] sm:w-[85vw] md:w-[75vw] max-w-[1000px] shadow-[0_0_50px_rgba(0,0,0,0.8)] bg-white select-none pointer-events-none" alt="Page" draggable={false} />
           )}          
         </div>
       </div>
