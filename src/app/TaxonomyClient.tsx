@@ -5,7 +5,7 @@ import { TaxonomyNode } from './types';
 
 const API_BASE_URL = 'https://api.guiji.online';
 
-interface ExtendedNode extends TaxonomyNode {
+export interface ExtendedNode extends TaxonomyNode {
   english_name?: string;
   children?: ExtendedNode[];
 }
@@ -26,7 +26,7 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
-
+  
   const [showGuide, setShowGuide] = useState(false);
   const [guideLoading, setGuideLoading] = useState(false);
   const [guideData, setGuideData] = useState<PdfGuide | null>(null);
@@ -34,9 +34,16 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
   
   const [activeGuideIndex, setActiveGuideIndex] = useState(0);
   const [ocrCopied, setOcrCopied] = useState(false);
-
   const [toolbarVisible, setToolbarVisible] = useState(true);
+  
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // 修复闭包陷阱：缓存最新的回调函数，避免键盘事件重复绑定
+  const onCloseRef = useRef(onClose);
+  const onNavigateRef = useRef(onNavigate);
+  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
+  useEffect(() => { onNavigateRef.current = onNavigate; }, [onNavigate]);
 
   const resetHideTimer = useCallback(() => {
     setToolbarVisible(true);
@@ -51,15 +58,20 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-      if (e.key === 'ArrowLeft' && pageNum > 1) onNavigate(pageNum - 1);
-      if (e.key === 'ArrowRight') onNavigate(pageNum + 1);
+      if (e.key === 'Escape') onCloseRef.current();
+      if (e.key === 'ArrowLeft' && pageNum > 1) onNavigateRef.current(pageNum - 1);
+      if (e.key === 'ArrowRight') onNavigateRef.current(pageNum + 1);
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [onClose, onNavigate, pageNum]);
+  }, [pageNum]); // 仅依赖 pageNum，回调使用 Ref
 
   useEffect(() => {
+    // 阻断上一页未完成的 AI 导读请求，防止竞态覆盖
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
     setLoading(true);
     setPosition({ x: 0, y: 0 }); 
     setShowGuide(false);
@@ -69,7 +81,6 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
     setOcrCopied(false);
     setZoom(1);
 
-    // 取消了低效的 fetch blob，直接将图片的 URL 赋值给 img 标签
     setImgData(`${API_BASE_URL}/api/v1/pdf/page/${pageNum}`);
   }, [pageNum]);
 
@@ -83,8 +94,13 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
 
     setGuideLoading(true);
     setGuideError(null);
+    
+    abortControllerRef.current = new AbortController();
+
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/pdf/page/${pageNum}/guide`);
+      const res = await fetch(`${API_BASE_URL}/api/v1/pdf/page/${pageNum}/guide`, {
+        signal: abortControllerRef.current.signal
+      });
       if (res.status === 404) {
         setGuideError(lang === 'zh' ? '该页暂未生成 AI 导读。' : 'AI Guide is not available for this page.');
         return;
@@ -92,7 +108,8 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
       if (!res.ok) throw new Error('API Error');
       const data = await res.json();
       setGuideData(data);
-    } catch (e) {
+    } catch (e: any) {
+      if (e.name === 'AbortError') return; // 忽略被主动取消的请求错误
       setGuideError(lang === 'zh' ? '导读加载失败，请检查网络。' : 'Failed to load guide. Please try again.');
     } finally {
       setGuideLoading(false);
@@ -104,6 +121,7 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
     setStartPos({ x: e.clientX - position.x, y: e.clientY - position.y });
     resetHideTimer();
   };
+
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging) return;
     setPosition({ x: e.clientX - startPos.x, y: e.clientY - startPos.y });
@@ -128,6 +146,7 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
       setStartPos({ x: e.touches[0].clientX - position.x, y: e.touches[0].clientY - position.y });
     }
   };
+
   const handleTouchMove = (e: React.TouchEvent) => {
     if (e.touches.length === 2) {
       const ratio = getTouchDist(e.touches) / pinchRef.current.startDist;
@@ -136,6 +155,7 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
       setPosition({ x: e.touches[0].clientX - startPos.x, y: e.touches[0].clientY - startPos.y });
     }
   };
+
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (e.touches.length === 0) {
       setIsDragging(false);
@@ -171,20 +191,19 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
   const currentGuide = parsedGuides[activeGuideIndex] || {};
 
   return (
-    <div className="fixed inset-0 bg-black/95 z-[9999] flex flex-col overflow-hidden overscroll-none" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/95 z-[9999] overflow-hidden overscroll-none" onClick={onClose}>
+      
       <div
-        className={`bg-black/50 text-white z-20 transition-transform duration-300 ${toolbarVisible ? 'translate-y-0' : '-translate-y-full'}`}
+        className={`absolute top-0 left-0 w-full bg-black/50 backdrop-blur-md text-white z-20 transition-transform duration-300 flex items-center justify-between px-3 sm:px-6 py-2 sm:py-3 ${toolbarVisible ? 'translate-y-0' : '-translate-y-full'}`}
         onClick={e => { e.stopPropagation(); resetHideTimer(); }}
       >
-        <div className="flex items-center justify-between px-3 sm:px-6 py-2 sm:py-3">
-          <div className="flex items-center gap-2 sm:gap-4">
-            <button onClick={() => { onNavigate(pageNum - 1); resetHideTimer(); }} disabled={pageNum <= 1} className="text-sm sm:text-base hover:text-[#4edea3] disabled:opacity-30 px-2 py-1">◀</button>
-            <span className="font-mono tracking-widest text-xs sm:text-sm text-gray-300 min-w-[60px] text-center">P{pageNum}</span>
-            <button onClick={() => { onNavigate(pageNum + 1); resetHideTimer(); }} className="text-sm sm:text-base hover:text-[#4edea3] px-2 py-1">▶</button>
-          </div>
-          <button onClick={onClose} className="p-2 bg-red-500/80 hover:bg-red-500 rounded-lg"><span className="material-symbols-outlined text-[20px]">close</span></button>
+        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+          <button onClick={() => { onNavigate(pageNum - 1); resetHideTimer(); }} disabled={pageNum <= 1} className="text-sm sm:text-base hover:text-[#4edea3] disabled:opacity-30 px-2 py-1">◀</button>
+          <span className="font-mono tracking-widest text-xs sm:text-sm text-gray-300 min-w-[60px] text-center">P{pageNum}</span>
+          <button onClick={() => { onNavigate(pageNum + 1); resetHideTimer(); }} className="text-sm sm:text-base hover:text-[#4edea3] px-2 py-1">▶</button>
         </div>
-        <div className="flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-6 pb-2 sm:pb-3">
+
+        <div className="flex items-center justify-center gap-2 flex-1 px-4">
           <button onClick={() => { handleToggleGuide(); resetHideTimer(); }} className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all shadow-sm ${showGuide ? 'bg-emerald-500 text-white' : 'bg-white/10 hover:bg-white/20'}`}>
             <span className="material-symbols-outlined text-[16px] sm:text-[18px]">auto_awesome</span>
             <span className="hidden sm:inline">{lang === 'zh' ? 'AI 导读' : 'AI Guide'}</span>
@@ -194,12 +213,16 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
           <button onClick={() => { setZoom(z => Math.min(5, z + 0.3)); resetHideTimer(); }} className="hidden sm:inline p-1.5 sm:p-2 hover:bg-white/10 rounded-lg"><span className="material-symbols-outlined text-[18px] sm:text-[20px]">zoom_in</span></button>
           <button onClick={() => { setZoom(z => Math.max(0.5, z - 0.3)); resetHideTimer(); }} className="hidden sm:inline p-1.5 sm:p-2 hover:bg-white/10 rounded-lg"><span className="material-symbols-outlined text-[18px] sm:text-[20px]">zoom_out</span></button>
         </div>
+
+        <button onClick={onClose} className="p-2 bg-red-500/80 hover:bg-red-500 rounded-lg shrink-0">
+          <span className="material-symbols-outlined text-[20px]">close</span>
+        </button>
       </div>
 
-      <div className="flex-1 relative w-full h-full flex justify-center items-center" onClick={e => { e.stopPropagation(); resetHideTimer(); }}>
+      <div className="absolute inset-0 flex justify-center items-center" onClick={e => { e.stopPropagation(); resetHideTimer(); }}>
         
         {showGuide && (
-          <div className="absolute top-6 right-6 w-[calc(100vw-48px)] sm:w-[400px] md:w-[480px] max-h-[80vh] flex flex-col bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl z-50 overflow-hidden text-gray-800 border border-white/40">
+          <div className="absolute top-[70px] right-6 w-[calc(100vw-48px)] sm:w-[400px] md:w-[480px] max-h-[80vh] flex flex-col bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl z-50 overflow-hidden text-gray-800 border border-white/40">
             
             <div className="flex justify-between items-center p-5 pb-3 border-b border-gray-100 shrink-0">
               <h3 className="font-bold text-lg flex items-center gap-2 text-emerald-700">
@@ -220,7 +243,6 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
                 </div>
               ) : guideData ? (
                 <div className="flex flex-col">
-                  
                   {parsedGuides.length > 1 && (
                     <div className="flex gap-2 overflow-x-auto pb-4 mb-4 border-b border-gray-100 custom-scrollbar shrink-0">
                       {parsedGuides.map((guide, idx) => {
@@ -246,7 +268,6 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
                     <div className="flex flex-col gap-4">
                       {Object.entries(currentGuide).map(([key, value], idx) => {
                         if (key === '学名' || key === 'Scientific Name') return null;
-                        
                         return (
                           <div key={idx} className="text-[14px]">
                             <h4 className="font-bold text-emerald-700 mb-1.5 flex items-center gap-1.5">
@@ -290,14 +311,21 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
                       </button>
                     </div>
                   )}
-
                 </div>
               ) : null}
             </div>
           </div>
         )}
 
-        {loading && <div className="absolute z-10 text-white text-lg tracking-widest animate-pulse">{lang === 'zh' ? '高清渲染中...' : 'Rendering...'}</div>}
+        {loading && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/40 backdrop-blur-md pointer-events-none transition-opacity duration-300">
+            <span className="material-symbols-outlined animate-spin text-5xl text-emerald-500 mb-4 drop-shadow-lg">autorenew</span>
+            <div className="text-white text-lg font-medium tracking-widest animate-pulse drop-shadow-md">
+              {lang === 'zh' ? '高清渲染中...' : 'Rendering...'}
+            </div>
+          </div>
+        )}
+
         <div className={`absolute ${isDragging ? 'grabbing-cursor' : 'grab-cursor'} transition-transform duration-75`}
           style={{ transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`, transformOrigin: 'center', touchAction: 'none' }}
           onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}
@@ -305,7 +333,10 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
         >
           {imgData && (
             /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={imgData} onLoad={() => setLoading(false)} className="block w-[95vw] sm:w-[85vw] md:w-[75vw] max-w-[1000px] shadow-[0_0_50px_rgba(0,0,0,0.8)] bg-white select-none pointer-events-none" alt="Page" draggable={false} />
+            <img src={imgData} onLoad={() => setLoading(false)} 
+              className={`block w-[95vw] sm:w-[85vw] md:w-[75vw] max-w-[1000px] shadow-[0_0_50px_rgba(0,0,0,0.8)] bg-white select-none pointer-events-none transition-all duration-300 ease-in-out ${loading ? 'opacity-30 blur-sm scale-95' : 'opacity-100 blur-0 scale-100'}`} 
+              alt="Page" draggable={false} 
+            />
           )}          
         </div>
       </div>
@@ -328,7 +359,7 @@ const TreeNode: React.FC<{ node: ExtendedNode; lang: 'zh' | 'en'; onOpenPdf: (p:
   const hasChildren = !!(node.children && node.children.length > 0);
   const [isExpanded, setIsExpanded] = useState(expandedNodes.has(node.name) || node.rank.toLowerCase() === 'order');
   const nodeRef = useRef<HTMLDivElement>(null);
-
+  
   useEffect(() => { if (expandedNodes.has(node.name)) setIsExpanded(true); }, [expandedNodes, node.name]);
 
   const displayName = lang === 'zh' ? node.name : (node.english_name || node.name);
@@ -338,16 +369,15 @@ const TreeNode: React.FC<{ node: ExtendedNode; lang: 'zh' | 'en'; onOpenPdf: (p:
     (node.english_name && node.english_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
     (node.latin_name && node.latin_name.toLowerCase().includes(searchQuery.toLowerCase()))
   );
-
+  
   useEffect(() => {
     if (isMatch && nodeRef.current) {
-      // 移动端渲染较慢，延长延时确保 DOM 已更新
       setTimeout(() => {
         nodeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
       }, 500);
     }
   }, [isMatch]);
-
+  
   const rankStyle = getRankStyle(node.rank);
 
   return (
@@ -402,7 +432,7 @@ export default function TaxonomyClient({ initialTreeData, lang }: { initialTreeD
   const treeContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setMounted(true); }, []);
-
+  
   const searchTree = useCallback((node: ExtendedNode, keyword: string, path: string[] = []): string[] | null => {
     const currentPath = [...path, node.name];
     if (
@@ -420,53 +450,36 @@ export default function TaxonomyClient({ initialTreeData, lang }: { initialTreeD
     }
     return null;
   }, []);
-
+  
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setSearchQuery(inputValue);
     if (!inputValue.trim()) { setExpandedNodes(new Set()); return; }
+    
     const path = searchTree(initialTreeData, inputValue);
     if (path) {
       setExpandedNodes(new Set(path));
-      // 延迟滚动，等 React 渲染完展开的树节点
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          const treeSection = treeContainerRef.current;
-          if (!treeSection) return;
-          // 先滚动页面到树区域
-          treeSection.scrollIntoView({ behavior: 'smooth' });
-          // 再定位高亮节点，水平滚动到可见位置
-          setTimeout(() => {
-            const highlighted = treeSection.querySelector('.highlight-node') as HTMLElement | null;
-            if (!highlighted) return;
-            const scrollContainer = highlighted.closest('.overflow-x-auto') as HTMLElement | null;
-            if (!scrollContainer) return;
-            const nodeRect = highlighted.getBoundingClientRect();
-            const containerRect = scrollContainer.getBoundingClientRect();
-            const targetLeft = scrollContainer.scrollLeft + nodeRect.left - containerRect.left - containerRect.width / 2 + nodeRect.width / 2;
-            scrollContainer.scrollTo({ left: Math.max(0, targetLeft), behavior: 'smooth' });
-          }, 400);
-        }, 200);
-      });
+      // 简化滚动逻辑：将滚动委托给目标节点的 useEffect，此处仅保证容器进入视野
+      setTimeout(() => {
+        treeContainerRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
     } else {
       setNotFoundAlert(true);
     }
   };
-
+  
   const handleEmailContact = (e: React.MouseEvent) => {
     e.preventDefault();
-    const myEmail = "paulmac1204@gmail.com"; 
-    
+    const myEmail = "paulmac1204@gmail.com";
     navigator.clipboard.writeText(myEmail).then(() => {
       setEmailCopied(true);
       setTimeout(() => setEmailCopied(false), 2000); 
     });
-
     window.location.href = `mailto:${myEmail}?subject=${encodeURIComponent(lang === 'zh' ? '龟迹项目交流' : 'CheloniaTrace Inquiry')}`;
   };
 
   if (!mounted) return null;
-
+  
   return (
     <div className="min-h-screen flex flex-col relative bg-[#f8f9fa] overflow-x-hidden text-[#191c1d]">
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm">
