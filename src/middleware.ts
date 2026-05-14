@@ -8,6 +8,9 @@ const defaultLocale = 'zh'
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  // Admin paths: skip locale redirect
+  if (pathname.startsWith('/admin')) return NextResponse.next()
+
   const pathnameHasLocale = locales.some(
     (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
   )
