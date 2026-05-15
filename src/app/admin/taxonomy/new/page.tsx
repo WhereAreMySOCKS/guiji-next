@@ -47,7 +47,7 @@ export default function NewTaxonomyNode() {
           <input
             name="name"
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#f6821f]"
             placeholder="如: 中华草龟"
           />
         </div>
@@ -59,7 +59,7 @@ export default function NewTaxonomyNode() {
             </label>
             <input
               name="english_name"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#f6821f]"
               placeholder="Chinese Pond Turtle"
             />
           </div>
@@ -69,7 +69,7 @@ export default function NewTaxonomyNode() {
             </label>
             <input
               name="latin_name"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#f6821f] font-mono"
               placeholder="Mauremys reevesii"
             />
           </div>
@@ -84,7 +84,7 @@ export default function NewTaxonomyNode() {
               name="rank"
               required
               defaultValue="species"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#f6821f]"
             >
               {["order", "family", "genus", "species", "subspecies"].map((r) => (
                 <option key={r} value={r}>{r}</option>
@@ -98,7 +98,7 @@ export default function NewTaxonomyNode() {
             <input
               name="page"
               type="number"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#f6821f]"
             />
           </div>
         </div>
@@ -109,7 +109,7 @@ export default function NewTaxonomyNode() {
           </label>
           <input
             name="parent_id"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#f6821f]"
             placeholder="UUID of parent taxonomy node"
           />
           <p className="text-xs text-gray-400 mt-1">
@@ -120,7 +120,7 @@ export default function NewTaxonomyNode() {
         <button
           type="submit"
           disabled={createNode.isPending}
-          className="w-full py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+          className="w-full py-2 bg-[#f6821f] text-white rounded-lg text-sm font-medium hover:bg-[#e57317] disabled:opacity-50 transition-colors"
         >
           {createNode.isPending ? "创建中..." : "创建"}
         </button>

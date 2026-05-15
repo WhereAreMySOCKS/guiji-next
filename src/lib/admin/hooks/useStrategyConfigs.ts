@@ -11,6 +11,7 @@ export interface StrategyConfigField {
   current_value: number | string | boolean;
   default_value: number | string | boolean;
   is_overridden: boolean;
+  description: string;
 }
 
 interface ConfigListResponse {

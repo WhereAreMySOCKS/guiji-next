@@ -5,24 +5,55 @@ import Link from "next/link";
 import { useTaxonomyNodes, useDeleteNode } from "@/lib/admin/hooks/useTaxonomy";
 
 const RANKS = ["", "order", "family", "genus", "species", "subspecies"];
+const TRAIT_FILTERS = [
+  { value: "", label: "全部特征" },
+  { value: "true", label: "已配置特征" },
+  { value: "false", label: "未配置特征" },
+];
+
+function generateChallenge(): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  for (let i = 0; i < 6; i++) {
+    result += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return result;
+}
 
 export default function TaxonomyListPage() {
   const [search, setSearch] = useState("");
   const [rank, setRank] = useState("");
+  const [traitFilter, setTraitFilter] = useState("");
   const [page, setPage] = useState(1);
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [deleteChallenge, setDeleteChallenge] = useState("");
+  const [deleteInput, setDeleteInput] = useState("");
 
   const { data, isLoading, error, refetch } = useTaxonomyNodes({
     search: search || undefined,
     rank: rank || undefined,
+    has_trait: traitFilter === "" ? undefined : traitFilter === "true",
     page,
     size: 20,
   });
   const deleteNode = useDeleteNode();
 
+  function startDelete(id: string) {
+    setDeleteTarget(id);
+    setDeleteChallenge(generateChallenge());
+    setDeleteInput("");
+  }
+
+  function cancelDelete() {
+    setDeleteTarget(null);
+    setDeleteChallenge("");
+    setDeleteInput("");
+  }
+
   async function handleDelete(id: string) {
+    if (deleteInput !== deleteChallenge) return;
     await deleteNode.mutateAsync(id);
-    setConfirmDelete(null);
+    cancelDelete();
     refetch();
   }
 
@@ -34,19 +65,19 @@ export default function TaxonomyListPage() {
         <h1 className="text-lg font-bold text-gray-800">物种管理</h1>
         <Link
           href="/admin/taxonomy/new"
-          className="px-4 py-1.5 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+          className="px-4 py-1.5 text-sm bg-[#f6821f] text-white rounded-lg hover:bg-[#e57317] transition-colors"
         >
           新建物种
         </Link>
       </div>
 
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mb-4 flex-wrap">
         <input
           type="text"
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-          placeholder="搜索名称或拉丁名..."
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-64 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          placeholder="搜索名称..."
+          className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-48 focus:outline-none focus:ring-2 focus:ring-[#f6821f]"
         />
         <select
           value={rank}
@@ -57,6 +88,15 @@ export default function TaxonomyListPage() {
             <option key={r} value={r}>
               {r || "全部 rank"}
             </option>
+          ))}
+        </select>
+        <select
+          value={traitFilter}
+          onChange={(e) => { setTraitFilter(e.target.value); setPage(1); }}
+          className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+        >
+          {TRAIT_FILTERS.map((f) => (
+            <option key={f.value} value={f.value}>{f.label}</option>
           ))}
         </select>
       </div>
@@ -80,7 +120,6 @@ export default function TaxonomyListPage() {
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50">
                   <th className="text-left px-4 py-2 font-medium text-gray-600">名称</th>
-                  <th className="text-left px-4 py-2 font-medium text-gray-600">拉丁名</th>
                   <th className="text-left px-4 py-2 font-medium text-gray-600 w-20">Rank</th>
                   <th className="text-center px-4 py-2 font-medium text-gray-600 w-16">特征</th>
                   <th className="text-right px-4 py-2 font-medium text-gray-600 w-28">操作</th>
@@ -89,7 +128,7 @@ export default function TaxonomyListPage() {
               <tbody>
                 {data.nodes.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
+                    <td colSpan={4} className="px-4 py-8 text-center text-gray-400">
                       暂无数据
                     </td>
                   </tr>
@@ -104,9 +143,6 @@ export default function TaxonomyListPage() {
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-2 text-gray-500 font-mono text-xs">
-                        {node.latin_name || "-"}
-                      </td>
                       <td className="px-4 py-2">
                         <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
                           {node.rank}
@@ -114,7 +150,7 @@ export default function TaxonomyListPage() {
                       </td>
                       <td className="px-4 py-2 text-center">
                         {node.has_trait ? (
-                          <span className="material-symbols-outlined text-emerald-600 text-base">
+                          <span className="material-symbols-outlined text-[#f6821f] text-base">
                             check_circle
                           </span>
                         ) : (
@@ -126,33 +162,16 @@ export default function TaxonomyListPage() {
                       <td className="px-4 py-2 text-right">
                         <Link
                           href={`/admin/taxonomy/${node.id}`}
-                          className="text-emerald-600 hover:text-emerald-800 text-xs mr-3"
+                          className="text-[#f6821f] hover:text-[#e57317] text-xs mr-3"
                         >
                           编辑
                         </Link>
-                        {confirmDelete === node.id ? (
-                          <>
-                            <button
-                              onClick={() => handleDelete(node.id)}
-                              className="text-red-600 hover:text-red-800 text-xs mr-2"
-                            >
-                              确认
-                            </button>
-                            <button
-                              onClick={() => setConfirmDelete(null)}
-                              className="text-gray-400 hover:text-gray-600 text-xs"
-                            >
-                              取消
-                            </button>
-                          </>
-                        ) : (
-                          <button
-                            onClick={() => setConfirmDelete(node.id)}
-                            className="text-gray-400 hover:text-red-600 text-xs"
-                          >
-                            删除
-                          </button>
-                        )}
+                        <button
+                          onClick={() => startDelete(node.id)}
+                          className="text-gray-400 hover:text-red-600 text-xs"
+                        >
+                          删除
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -184,6 +203,64 @@ export default function TaxonomyListPage() {
             </div>
           </div>
         </>
+      )}
+
+      {/* 删除确认弹窗 */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={cancelDelete}>
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <span className="material-symbols-outlined text-red-500 text-2xl">warning</span>
+              <div>
+                <h3 className="text-base font-bold text-gray-800">确认删除</h3>
+                <p className="text-sm text-gray-500">
+                  此操作不可撤销。
+                  <span className="font-semibold text-gray-700">
+                    「{data?.nodes.find((n) => n.id === deleteTarget)?.name || "未知物种"}」
+                  </span>
+                  及其特征数据将被永久删除。
+                </p>
+              </div>
+            </div>
+
+            <p className="text-sm text-gray-600 mb-2">
+              请输入以下字符以确认操作：
+            </p>
+            <div className="bg-gray-100 rounded-lg px-4 py-2 mb-3 text-center font-mono text-lg font-bold text-gray-800 tracking-widest select-all">
+              {deleteChallenge}
+            </div>
+
+            <input
+              type="text"
+              value={deleteInput}
+              onChange={(e) => setDeleteInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && deleteInput === deleteChallenge && !deleteNode.isPending) {
+                  handleDelete(deleteTarget!);
+                }
+              }}
+              placeholder="输入上方字符"
+              autoFocus
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+            />
+
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={() => handleDelete(deleteTarget!)}
+                disabled={deleteInput !== deleteChallenge || deleteNode.isPending}
+                className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-semibold"
+              >
+                {deleteNode.isPending ? "删除中..." : "确认删除"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

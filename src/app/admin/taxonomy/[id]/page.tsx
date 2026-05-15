@@ -199,11 +199,11 @@ export default function TaxonomyDetailPage() {
           <button
             onClick={handleSaveNode}
             disabled={updateNode.isPending}
-            className="px-3 py-1.5 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700 disabled:opacity-50"
+            className="px-3 py-1.5 text-sm bg-[#f6821f] text-white rounded hover:bg-[#e57317] disabled:opacity-50"
           >
             {updateNode.isPending ? "保存中..." : "保存基本信息"}
           </button>
-          {saved && <span className="text-sm text-emerald-600 self-center">已保存</span>}
+          {saved && <span className="text-sm text-[#f6821f] self-center">已保存</span>}
           <button
             onClick={handleDelete}
             className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded ml-auto"
@@ -252,12 +252,12 @@ export default function TaxonomyDetailPage() {
           <button
             onClick={handleSaveTrait}
             disabled={saveTrait.isPending}
-            className="px-3 py-1.5 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700 disabled:opacity-50"
+            className="px-3 py-1.5 text-sm bg-[#f6821f] text-white rounded hover:bg-[#e57317] disabled:opacity-50"
           >
             {saveTrait.isPending ? "保存中..." : "保存特征"}
           </button>
           {traitSaved && (
-            <span className="text-sm text-emerald-600 self-center">已保存</span>
+            <span className="text-sm text-[#f6821f] self-center">已保存</span>
           )}
         </div>
       </section>

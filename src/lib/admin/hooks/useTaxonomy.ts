@@ -46,12 +46,14 @@ interface TaxonomyListResponse {
 export function useTaxonomyNodes(params: {
   rank?: string;
   search?: string;
+  has_trait?: boolean;
   page?: number;
   size?: number;
 }) {
   const searchParams = new URLSearchParams();
   if (params.rank) searchParams.set("rank", params.rank);
   if (params.search) searchParams.set("search", params.search);
+  if (params.has_trait !== undefined) searchParams.set("has_trait", String(params.has_trait));
   searchParams.set("page", String(params.page || 1));
   searchParams.set("size", String(params.size || 20));
 
