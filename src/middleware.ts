@@ -8,9 +8,6 @@ const defaultLocale = 'zh'
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Admin paths: skip locale redirect
-  if (pathname.startsWith('/admin')) return NextResponse.next()
-
   const pathnameHasLocale = locales.some(
     (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
   )
@@ -37,6 +34,6 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!admin|api|_next/static|_next/image|favicon.ico|.*\\.).*)'],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|.*\\.).*)'],
   runtime: 'experimental-edge', 
 }
