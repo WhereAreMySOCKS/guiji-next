@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { TaxonomyNode } from './types';
+import { apiUrl } from '@/lib/api';
 import { createTaxonSlug } from '@/lib/taxonomySlug';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE || 'https://api.guiji.online';
 
 export interface ExtendedNode extends TaxonomyNode {
   english_name?: string;
@@ -82,7 +81,7 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
     setOcrCopied(false);
     setZoom(1);
 
-    setImgData(`${API_BASE_URL}/api/v1/pdf/page/${pageNum}`);
+    setImgData(apiUrl(`/pdf/page/${pageNum}`));
   }, [pageNum]);
 
   const handleToggleGuide = async () => {
@@ -99,7 +98,7 @@ const ImageViewer: React.FC<{ pageNum: number; onClose: () => void; onNavigate: 
     abortControllerRef.current = new AbortController();
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/pdf/page/${pageNum}/guide`, {
+      const res = await fetch(apiUrl(`/pdf/page/${pageNum}/guide`), {
         signal: abortControllerRef.current.signal
       });
       if (res.status === 404) {
@@ -356,7 +355,56 @@ const getRankStyle = (rank: string) => {
   return styles[rank.toLowerCase()] || 'border-gray-300 bg-gray-50 text-gray-700';
 };
 
-const TreeNode: React.FC<{ node: ExtendedNode; lang: 'zh' | 'en'; onOpenPdf: (p: number) => void; expandedNodes: Set<string>; searchQuery: string; }> = ({ node, lang, onOpenPdf, expandedNodes, searchQuery }) => {
+const buildSlugMap = (root: ExtendedNode) => {
+  const slugCounts = new Map<string, number>();
+  const slugById = new Map<string, string>();
+
+  const walk = (node: ExtendedNode) => {
+    const base = createTaxonSlug(node);
+    const count = (slugCounts.get(base) || 0) + 1;
+    slugCounts.set(base, count);
+    slugById.set(String(node.id), createTaxonSlug(node, count));
+
+    for (const child of node.children || []) {
+      walk(child);
+    }
+  };
+
+  walk(root);
+  return slugById;
+};
+
+type FocusTarget = { path: string[]; query: string };
+
+const findNodeBySlug = (root: ExtendedNode, targetSlug: string, lang: 'zh' | 'en'): FocusTarget | null => {
+  const slugCounts = new Map<string, number>();
+
+  const walk = (node: ExtendedNode, path: string[]): FocusTarget | null => {
+    const base = createTaxonSlug(node);
+    const count = (slugCounts.get(base) || 0) + 1;
+    slugCounts.set(base, count);
+
+    const slug = createTaxonSlug(node, count);
+    const currentPath = [...path, node.name];
+    if (slug === targetSlug) {
+      return {
+        path: currentPath,
+        query: lang === 'zh' ? node.name : (node.english_name || node.latin_name || node.name),
+      };
+    }
+
+    for (const child of node.children || []) {
+      const match = walk(child, currentPath);
+      if (match) return match;
+    }
+
+    return null;
+  };
+
+  return walk(root, []);
+};
+
+const TreeNode: React.FC<{ node: ExtendedNode; lang: 'zh' | 'en'; onOpenPdf: (p: number) => void; expandedNodes: Set<string>; searchQuery: string; getNodeSlug: (node: ExtendedNode) => string; }> = ({ node, lang, onOpenPdf, expandedNodes, searchQuery, getNodeSlug }) => {
   const hasChildren = !!(node.children && node.children.length > 0);
   const [isExpanded, setIsExpanded] = useState(expandedNodes.has(node.name) || node.rank.toLowerCase() === 'order');
   const nodeRef = useRef<HTMLDivElement>(null);
@@ -401,7 +449,7 @@ const TreeNode: React.FC<{ node: ExtendedNode; lang: 'zh' | 'en'; onOpenPdf: (p:
             <h3 className="text-[15px] font-bold text-gray-900 leading-tight w-full truncate" title={displayName}>{displayName}</h3>
             <p className="text-[11px] italic text-gray-500 mt-1 w-full truncate" title={node.latin_name}>{node.latin_name || 'Unknown'}</p>
             <a
-              href={`/${lang}/taxa/${createTaxonSlug(node)}`}
+              href={`/${lang}/taxa/${getNodeSlug(node)}`}
               className="mt-2 text-[11px] font-semibold text-gray-400 hover:text-emerald-700 transition-colors"
               onClick={(e) => e.stopPropagation()}
             >
@@ -418,7 +466,7 @@ const TreeNode: React.FC<{ node: ExtendedNode; lang: 'zh' | 'en'; onOpenPdf: (p:
       {hasChildren && isExpanded && (
         <ul>
           {node.children!.map((child) => (
-            <TreeNode key={child.id} lang={lang} node={child as ExtendedNode} onOpenPdf={onOpenPdf} expandedNodes={expandedNodes} searchQuery={searchQuery} />
+            <TreeNode key={child.id} lang={lang} node={child as ExtendedNode} onOpenPdf={onOpenPdf} expandedNodes={expandedNodes} searchQuery={searchQuery} getNodeSlug={getNodeSlug} />
           ))}
         </ul>
       )}
@@ -437,6 +485,10 @@ export default function TaxonomyClient({ initialTreeData, lang }: { initialTreeD
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const treeContainerRef = useRef<HTMLDivElement>(null);
+  const slugById = useMemo(() => buildSlugMap(initialTreeData), [initialTreeData]);
+  const getNodeSlug = useCallback((node: ExtendedNode) => {
+    return slugById.get(String(node.id)) || createTaxonSlug(node);
+  }, [slugById]);
 
   const searchTree = useCallback((node: ExtendedNode, keyword: string, path: string[] = []): string[] | null => {
     const currentPath = [...path, node.name];
@@ -472,6 +524,21 @@ export default function TaxonomyClient({ initialTreeData, lang }: { initialTreeD
       setNotFoundAlert(true);
     }
   };
+
+  useEffect(() => {
+    const focusSlug = new URLSearchParams(window.location.search).get('focus');
+    if (!focusSlug) return;
+
+    const focusedNode = findNodeBySlug(initialTreeData, focusSlug, lang);
+    if (!focusedNode) return;
+
+    setInputValue(focusedNode.query);
+    setSearchQuery(focusedNode.query);
+    setExpandedNodes(new Set(focusedNode.path));
+    setTimeout(() => {
+      treeContainerRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 150);
+  }, [initialTreeData, lang]);
   
   const handleEmailContact = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -590,7 +657,7 @@ export default function TaxonomyClient({ initialTreeData, lang }: { initialTreeD
           <div className="inline-block min-w-full px-4 md:px-10">
             <div className={`org-tree ${searchQuery ? 'search-active' : ''}`}>
               <ul>
-                <TreeNode node={initialTreeData} lang={lang} onOpenPdf={setViewingPage} expandedNodes={expandedNodes} searchQuery={searchQuery} />
+                <TreeNode node={initialTreeData} lang={lang} onOpenPdf={setViewingPage} expandedNodes={expandedNodes} searchQuery={searchQuery} getNodeSlug={getNodeSlug} />
               </ul>
             </div>
           </div>
