@@ -4,7 +4,7 @@ const dictionaries = {
   zh: {
     title: '龟迹 CheloniaTrace | 全球龟鳖目图鉴与 AI 智能导读',
     description: '专为爬行动物爱好者与科研人员打造的可视化龟鳖目（Testudines）分类图鉴平台。提供全球水龟、陆龟、海龟的树状演化族谱，并内置前沿的 AI 智能导读与文献原文提取功能。',
-    keywords: ['龟鳖目', '乌龟图鉴', 'AI智能导读', 'Testudines', '系统发育树', '海龟', '陆龟', '水龟', '文献分析', 'CheloniaTrace', '爬行动物数据库'],
+    keywords: ['龟鳖目', '乌龟分类', '乌龟大全', '乌龟品种大全', '乌龟图鉴', '龟鳖目图鉴', 'AI智能导读', 'Testudines', '系统发育树', '海龟', '陆龟', '水龟', '文献分析', 'CheloniaTrace', '爬行动物数据库'],
   },
   en: {
     title: 'CheloniaTrace | Global Testudines Taxonomy & AI Analysis',
@@ -72,15 +72,13 @@ export default async function LangLayout({
             "publisher": {
               "@type": "Organization",
               "name": "CheloniaTrace",
-              "url": "https://www.guiji.online",
-              "logo": { "@type": "ImageObject", "url": "https://www.guiji.online/logo.png" }
+              "url": "https://www.guiji.online"
             }
           },
           {
             "@type": "Organization",
             "name": "CheloniaTrace",
-            "url": "https://www.guiji.online",
-            "sameAs": ["https://github.com/your-org", "https://twitter.com/your-handle"]
+            "url": "https://www.guiji.online"
           },
           {
             "@type": "Dataset",
@@ -88,7 +86,7 @@ export default async function LangLayout({
             "description": "包含全球龟鳖目（Testudines）系统分类结构、物种树与AI文献导读内容。",
             "url": "https://www.guiji.online/zh",
             "creator": { "@type": "Organization", "name": "CheloniaTrace" },
-            "keywords": ["龟鳖目", "分类学", "系统发育", "AI导读", "爬行动物数据库"],
+            "keywords": ["龟鳖目", "乌龟分类", "乌龟大全", "乌龟品种", "分类学", "系统发育", "AI导读", "爬行动物数据库"],
             "license": "https://creativecommons.org/licenses/by/4.0/",
             "inLanguage": "zh-CN"
           },
@@ -117,15 +115,13 @@ export default async function LangLayout({
             "publisher": {
               "@type": "Organization",
               "name": "CheloniaTrace",
-              "url": "https://www.guiji.online",
-              "logo": { "@type": "ImageObject", "url": "https://www.guiji.online/logo.png" }
+              "url": "https://www.guiji.online"
             }
           },
           {
             "@type": "Organization",
             "name": "CheloniaTrace",
-            "url": "https://www.guiji.online",
-            "sameAs": ["https://github.com/your-org", "https://twitter.com/your-handle"]
+            "url": "https://www.guiji.online"
           },
           {
             "@type": "Dataset",

@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { TaxonomyNode } from './types';
+import { createTaxonSlug } from '@/lib/taxonomySlug';
 
-const API_BASE_URL = 'https://api.guiji.online';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE || 'https://api.guiji.online';
 
 export interface ExtendedNode extends TaxonomyNode {
   english_name?: string;
@@ -399,6 +400,13 @@ const TreeNode: React.FC<{ node: ExtendedNode; lang: 'zh' | 'en'; onOpenPdf: (p:
           <div className="p-4 flex flex-col items-center text-center bg-white relative">
             <h3 className="text-[15px] font-bold text-gray-900 leading-tight w-full truncate" title={displayName}>{displayName}</h3>
             <p className="text-[11px] italic text-gray-500 mt-1 w-full truncate" title={node.latin_name}>{node.latin_name || 'Unknown'}</p>
+            <a
+              href={`/${lang}/taxa/${createTaxonSlug(node)}`}
+              className="mt-2 text-[11px] font-semibold text-gray-400 hover:text-emerald-700 transition-colors"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {lang === 'zh' ? '分类详情' : 'Taxon detail'}
+            </a>
             {hasChildren && (
               <div className={`mt-2 -mb-2 text-gray-300 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
                 <span className="material-symbols-outlined text-[18px]">expand_more</span>
@@ -419,7 +427,6 @@ const TreeNode: React.FC<{ node: ExtendedNode; lang: 'zh' | 'en'; onOpenPdf: (p:
 };
 
 export default function TaxonomyClient({ initialTreeData, lang }: { initialTreeData: ExtendedNode, lang: 'zh' | 'en' }) {
-  const [mounted, setMounted] = useState(false);
   const [viewingPage, setViewingPage] = useState<number | null>(null);
   const [inputValue, setInputValue] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -431,8 +438,6 @@ export default function TaxonomyClient({ initialTreeData, lang }: { initialTreeD
 
   const treeContainerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { setMounted(true); }, []);
-  
   const searchTree = useCallback((node: ExtendedNode, keyword: string, path: string[] = []): string[] | null => {
     const currentPath = [...path, node.name];
     if (
@@ -478,8 +483,6 @@ export default function TaxonomyClient({ initialTreeData, lang }: { initialTreeD
     window.location.href = `mailto:${myEmail}?subject=${encodeURIComponent(lang === 'zh' ? '龟迹项目交流' : 'CheloniaTrace Inquiry')}`;
   };
 
-  if (!mounted) return null;
-  
   return (
     <div className="min-h-screen flex flex-col relative bg-[#f8f9fa] overflow-x-hidden text-[#191c1d]">
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm">
