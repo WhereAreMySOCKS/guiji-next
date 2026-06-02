@@ -120,7 +120,14 @@ export default async function TaxonDetailPage({ params }: PageProps) {
     isPartOf: {
       "@type": "Dataset",
       name: lang === "zh" ? "龟迹龟鳖目分类数据库" : "CheloniaTrace Testudines Taxonomy Database",
+      description:
+        lang === "zh"
+          ? "龟迹（CheloniaTrace）全球龟鳖目（Testudines）分类与文献数据库，涵盖系统发育树、AI 智能导读及权威图鉴内容，持续更新中。"
+          : "CheloniaTrace global Testudines taxonomy and literature database, covering a complete phylogenetic tree, AI-powered guide summaries, and authoritative plate references — continuously updated.",
       url: `${SITE_URL}/${lang}`,
+      license: "https://creativecommons.org/licenses/by/4.0/",
+      creator: { "@type": "Organization", "name": "CheloniaTrace" },
+      inLanguage: lang === "zh" ? "zh-CN" : "en-US",
     },
   };
 

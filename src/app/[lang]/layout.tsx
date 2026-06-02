@@ -83,7 +83,7 @@ export default async function LangLayout({
           {
             "@type": "Dataset",
             "name": "全球龟鳖目分类与文献数据库",
-            "description": "包含全球龟鳖目（Testudines）系统分类结构、物种树与AI文献导读内容。",
+            "description": "龟迹（CheloniaTrace）全球龟鳖目（Testudines）分类与文献数据库，提供完整的纲目科属种系统发育树、数百个物种的高清图鉴页、AI 智能导读摘要及权威学术文献引用，是面向爬行动物爱好者与科研工作者的开放数据集。",
             "url": "https://www.guiji.online/zh",
             "creator": { "@type": "Organization", "name": "CheloniaTrace" },
             "keywords": ["龟鳖目", "乌龟分类", "乌龟大全", "乌龟品种", "分类学", "系统发育", "AI导读", "爬行动物数据库"],
@@ -126,7 +126,7 @@ export default async function LangLayout({
           {
             "@type": "Dataset",
             "name": "Global Testudines Taxonomy Dataset",
-            "description": "A dataset covering global turtle taxonomy, phylogenetic tree, and AI-assisted literature extraction.",
+            "description": "CheloniaTrace global Testudines taxonomy and literature dataset — covering a complete phylogenetic tree from order down to subspecies, high-resolution plate pages for hundreds of species, AI-powered guide summaries, and authoritative scientific references. An open dataset for herpetology enthusiasts and researchers worldwide.",
             "url": "https://www.guiji.online/en",
             "creator": { "@type": "Organization", "name": "CheloniaTrace" },
             "keywords": ["Testudines", "Turtle Taxonomy", "Phylogenetics", "AI Guide"],
