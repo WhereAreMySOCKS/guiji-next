@@ -108,7 +108,7 @@ export default async function TaxonDetailPage({ params }: PageProps) {
         .filter((item) => String(item.node.id) !== String(entry.node.id) && String(item.path.at(-2)?.id) === String(parent.id))
         .slice(0, 8)
     : [];
-  const primaryImageUrl = entry.node.page ? apiUrl(`/pdf/page/${entry.node.page}`) : null;
+  const primaryImageUrl = entry.node.image_url || (entry.node.page ? apiUrl(`/pdf/page/${entry.node.page}`) : null);
 
   const jsonLd = {
     "@context": "https://schema.org",

@@ -3,7 +3,6 @@ import type { TaxonomyNode } from "@/app/types";
 export type Lang = "zh" | "en";
 
 export interface ExtendedTaxonomyNode extends TaxonomyNode {
-  english_name?: string;
   has_guide?: boolean;
   children?: ExtendedTaxonomyNode[];
 }
@@ -37,13 +36,13 @@ export function rankLabel(rank: string, lang: Lang) {
 
 export function nodeDisplayName(node: ExtendedTaxonomyNode, lang: Lang) {
   if (lang === "en") {
-    return node.english_name || node.latin_name || node.name;
+    return node.name_en || node.english_name || node.latin_name || node.name;
   }
-  return node.name || node.latin_name || node.english_name || "Unknown";
+  return node.name_zh || node.name || node.latin_name || node.name_en || node.english_name || "Unknown";
 }
 
 export function taxonSlugBase(node: ExtendedTaxonomyNode) {
-  const source = node.latin_name || node.english_name || node.name || String(node.id);
+  const source = node.slug || node.latin_name || node.name_en || node.english_name || node.name || String(node.id);
   const normalized = source
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")

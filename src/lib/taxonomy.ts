@@ -111,6 +111,7 @@ export function taxonDescription(entry: TaxonEntry, lang: Lang) {
   const latin = entry.node.latin_name ? `（${entry.node.latin_name}）` : "";
   const rank = rankLabel(entry.node.rank, lang);
   const path = entry.path.map((item) => nodeDisplayName(item, lang)).join(lang === "zh" ? " > " : " > ");
+  if (entry.node.seo_summary) return entry.node.seo_summary;
 
   if (lang === "zh") {
     return `${name}${latin}是龟鳖目分类体系中的${rank}节点。查看其分类位置、上下级关系、相关图鉴与龟迹乌龟大全中的系统分类信息：${path}。`;
