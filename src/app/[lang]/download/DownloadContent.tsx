@@ -161,7 +161,7 @@ const copy: Record<Lang, {
 }> = {
   zh: {
     eyebrow: "下载",
-    h1: "APP正在抓紧开发中...",
+    h1: "APP正在急速开发中...",
     lead: "不做简单的记录工具，而是你专属的智能养龟助手！",
     features: [
       { icon: "history", title: "长期饲养记录", desc: "体重、水温、喂食历史留存，复盘有据可依。" },
