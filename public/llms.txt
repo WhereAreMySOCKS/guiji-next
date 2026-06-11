@@ -1,0 +1,42 @@
+# 龟迹 CheloniaTrace
+
+> Turtle feeding calculator, Testudines encyclopedia, and research database.
+> 龟类喂食策略在线计算、龟鳖目物种百科与研究资料库。
+
+## Core pages
+
+- Home / Feeding Calculator: https://www.guiji.online/zh
+- Feeding Strategy Calculator: https://www.guiji.online/zh/tools/feeding-strategy
+- Testudines Taxonomy Tree: https://www.guiji.online/zh/taxonomy
+- Turtle Encyclopedia: https://www.guiji.online/zh/encyclopedia
+- Research Database: https://www.guiji.online/zh/research
+- Species Evidence: https://www.guiji.online/zh/research/species
+- Source List: https://www.guiji.online/zh/research/sources
+- Download App: https://www.guiji.online/zh/download
+
+## English pages
+
+- Home / Feeding Calculator: https://www.guiji.online/en
+- Feeding Strategy Calculator: https://www.guiji.online/en/tools/feeding-strategy
+- Testudines Taxonomy Tree: https://www.guiji.online/en/taxonomy
+- Turtle Encyclopedia: https://www.guiji.online/en/encyclopedia
+- Research Database: https://www.guiji.online/en/research
+- Species Evidence: https://www.guiji.online/en/research/species
+- Source List: https://www.guiji.online/en/research/sources
+- Download App: https://www.guiji.online/en/download
+
+## About
+
+CheloniaTrace (龟迹) is a turtle/pet care platform offering:
+- Research-backed feeding strategy calculator
+- Complete Testudines taxonomy browser (order to subspecies)
+- Species trait database with images and AI guide summaries
+- Academic research provenance with structured evidence
+- Smart home integration (Xiaomi Mijia) for automated feeding
+
+## Structure
+
+- /taxa/{slug} — Individual taxon pages with lineage, traits, and plate references
+- /research/species — Species-level evidence coverage scores
+- /research/sources — Source list with levels (L1 authority databases, L2 papers, L3 husbandry guides)
+- /research/sources/{id} — Individual source detail with linked evidence

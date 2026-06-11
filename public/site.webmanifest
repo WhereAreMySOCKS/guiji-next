@@ -1,0 +1,21 @@
+{
+  "name": "龟迹 CheloniaTrace",
+  "short_name": "龟迹",
+  "description": "龟类喂食策略计算器、龟鳖目百科与研究资料库",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8f9fa",
+  "theme_color": "#f8f9fa",
+  "icons": [
+    {
+      "src": "/favicon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
