@@ -1,4 +1,4 @@
-import type { TaxonomyNode } from "@/app/types";
+import type { TaxonomyNode } from "@/lib/types";
 
 export type Lang = "zh" | "en";
 

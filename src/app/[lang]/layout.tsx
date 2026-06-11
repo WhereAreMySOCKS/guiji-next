@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 
 const dictionaries = {
   zh: {
-    title: '龟迹 CheloniaTrace | 全球龟鳖目图鉴与 AI 智能导读',
-    description: '专为爬行动物爱好者与科研人员打造的可视化龟鳖目（Testudines）分类图鉴平台。提供全球水龟、陆龟、海龟的树状演化族谱，并内置前沿的 AI 智能导读与文献原文提取功能。',
-    keywords: ['龟鳖目', '乌龟分类', '乌龟大全', '乌龟品种大全', '乌龟图鉴', '龟鳖目图鉴', 'AI智能导读', 'Testudines', '系统发育树', '海龟', '陆龟', '水龟', '文献分析', 'CheloniaTrace', '爬行动物数据库'],
+    title: '龟迹 CheloniaTrace | 智能喂食 · 龟鳖百科 · 下载APP',
+    description: '龟迹（CheloniaTrace）提供智能喂食策略在线计算、龟鳖目物种百科、研究资料库和养龟助手APP下载。',
+    keywords: ['智能喂食', '龟类喂食策略', '乌龟喂食计算器', '龟鳖百科', '龟鳖目物种', '乌龟大全', '养龟助手', '龟迹 App', 'CheloniaTrace'],
   },
   en: {
-    title: 'CheloniaTrace | Global Testudines Taxonomy & AI Analysis',
-    description: 'A visual taxonomy guide and phylogenetic tree for turtle and tortoise enthusiasts. Explore the global database of Testudines, featuring scientific names, lineages, and AI-powered taxonomic literature analysis.',
-    keywords: ['Testudines', 'Turtle Taxonomy', 'AI Analysis', 'Tortoise Database', 'Phylogenetic tree', 'CheloniaTrace', 'Reptile Database', 'Sea Turtles', 'AI Guide'],
+    title: 'CheloniaTrace | Smart Feeding · Turtle Encyclopedia · App',
+    description: 'CheloniaTrace offers a smart turtle feeding calculator, Testudines encyclopedia, research database, and turtle care assistant app.',
+    keywords: ['Turtle Feeding Calculator', 'CheloniaTrace', 'Testudines', 'Turtle Encyclopedia', 'Turtle Taxonomy', 'Tortoise Database', 'Turtle Care App'],
   }
 };
 
@@ -65,9 +65,9 @@ export default async function LangLayout({
           {
             "@type": "WebSite",
             "name": "龟迹 CheloniaTrace",
-            "alternateName": "全球龟鳖目分类图鉴",
+            "alternateName": "智能喂食策略与龟鳖百科",
             "url": "https://www.guiji.online",
-            "description": "全球龟鳖目分类图鉴与AI导读平台，提供系统发育树与文献智能解析。",
+            "description": "智能喂食策略在线计算、龟鳖目物种百科、研究资料库和养龟助手APP。",
             "inLanguage": ["zh-CN", "en-US"],
             "publisher": {
               "@type": "Organization",
@@ -83,20 +83,20 @@ export default async function LangLayout({
           {
             "@type": "Dataset",
             "name": "全球龟鳖目分类与文献数据库",
-            "description": "龟迹（CheloniaTrace）全球龟鳖目（Testudines）分类与文献数据库，提供完整的纲目科属种系统发育树、数百个物种的高清图鉴页、AI 智能导读摘要及权威学术文献引用，是面向爬行动物爱好者与科研工作者的开放数据集。",
+            "description": "龟迹（CheloniaTrace）研究数据库，收录原始来源、结构化证据、策略参数依据、龟鳖目分类树和物种百科。",
             "url": "https://www.guiji.online/zh",
             "creator": { "@type": "Organization", "name": "CheloniaTrace" },
-            "keywords": ["龟鳖目", "乌龟分类", "乌龟大全", "乌龟品种", "分类学", "系统发育", "AI导读", "爬行动物数据库"],
+            "keywords": ["龟鳖目", "乌龟分类", "乌龟大全", "乌龟品种", "分类学", "系统发育", "爬行动物数据库"],
             "license": "https://creativecommons.org/licenses/by/4.0/",
             "inLanguage": "zh-CN"
           },
           {
             "@type": "Article",
-            "headline": "全球龟鳖目图鉴与AI智能导读",
-            "description": "提供详尽的物种分类结构、高清图鉴及权威生态信息查询。",
+            "headline": "智能喂食策略 · 龟鳖百科 · 下载APP",
+            "description": "智能喂食策略在线计算，龟鳖目物种百科浏览，研究资料库，养龟助手APP下载。",
             "author": { "@type": "Organization", "name": "CheloniaTrace" },
             "datePublished": "2026-04-30",
-            "dateModified": "2026-04-30",
+            "dateModified": "2026-06-09",
             "inLanguage": "zh-CN",
             "mainEntityOfPage": "https://www.guiji.online/zh"
           }
@@ -108,9 +108,9 @@ export default async function LangLayout({
           {
             "@type": "WebSite",
             "name": "CheloniaTrace",
-            "alternateName": "Global Testudines Database",
+            "alternateName": "Smart Turtle Feeding and Encyclopedia",
             "url": "https://www.guiji.online",
-            "description": "Global turtle taxonomy and AI literature guide platform with phylogenetic tree and scientific data.",
+            "description": "Smart turtle feeding calculator, Testudines encyclopedia, research database, and turtle care app.",
             "inLanguage": ["en-US", "zh-CN"],
             "publisher": {
               "@type": "Organization",
@@ -126,20 +126,20 @@ export default async function LangLayout({
           {
             "@type": "Dataset",
             "name": "Global Testudines Taxonomy Dataset",
-            "description": "CheloniaTrace global Testudines taxonomy and literature dataset — covering a complete phylogenetic tree from order down to subspecies, high-resolution plate pages for hundreds of species, AI-powered guide summaries, and authoritative scientific references. An open dataset for herpetology enthusiasts and researchers worldwide.",
+            "description": "CheloniaTrace turtle research dataset covering original sources, structured evidence, care strategy provenance, taxonomy, and species pages.",
             "url": "https://www.guiji.online/en",
             "creator": { "@type": "Organization", "name": "CheloniaTrace" },
-            "keywords": ["Testudines", "Turtle Taxonomy", "Phylogenetics", "AI Guide"],
+            "keywords": ["Testudines", "Turtle Taxonomy", "Phylogenetics", "Turtle Encyclopedia"],
             "license": "https://creativecommons.org/licenses/by/4.0/",
             "inLanguage": "en-US"
           },
           {
             "@type": "Article",
-            "headline": "Global Testudines Database & AI Guide",
-            "description": "Explore taxonomy, images, and AI-generated literature summaries for turtles and tortoises.",
+            "headline": "Smart Feeding · Turtle Encyclopedia · App Download",
+            "description": "Smart feeding calculator, Testudines encyclopedia, research database, and turtle care app.",
             "author": { "@type": "Organization", "name": "CheloniaTrace" },
             "datePublished": "2026-04-30",
-            "dateModified": "2026-04-30",
+            "dateModified": "2026-06-09",
             "inLanguage": "en-US",
             "mainEntityOfPage": "https://www.guiji.online/en"
           }

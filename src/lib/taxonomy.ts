@@ -95,9 +95,9 @@ export function taxonTitle(entry: TaxonEntry, lang: Lang) {
 
   if (lang === "zh") {
     const suffix = entry.node.rank === "species" || entry.node.rank === "subspecies"
-      ? "乌龟品种大全"
-      : "乌龟分类大全";
-    return `${name}${latin} | ${suffix} | 龟迹`;
+      ? "龟类物种资料"
+      : "龟鳖目分类";
+    return `${name}${latin} | ${suffix} | 龟迹 CheloniaTrace`;
   }
 
   const suffix = entry.node.rank === "species" || entry.node.rank === "subspecies"
@@ -114,7 +114,7 @@ export function taxonDescription(entry: TaxonEntry, lang: Lang) {
   if (entry.node.seo_summary) return entry.node.seo_summary;
 
   if (lang === "zh") {
-    return `${name}${latin}是龟鳖目分类体系中的${rank}节点。查看其分类位置、上下级关系、相关图鉴与龟迹乌龟大全中的系统分类信息：${path}。`;
+    return `${name}${latin}是龟鳖目下的${rank}级分类。在龟迹查看它的上下级关系、图鉴资料和分类路径：${path}。`;
   }
 
   return `${name}${latin} is a ${rank.toLowerCase()} in the Testudines taxonomy. Explore its lineage, related taxa, plate references, and CheloniaTrace turtle database context: ${path}.`;
@@ -130,10 +130,10 @@ export function taxonLead(entry: TaxonEntry, lang: Lang) {
 
   if (lang === "zh") {
     if (entry.node.rank === "species" || entry.node.rank === "subspecies") {
-      return `${name}${latin ? `（${latin}）` : ""}是龟迹收录的${rank}条目，${parentName ? `位于${parentName}之下，` : ""}可用于快速确认它在龟鳖目分类树中的位置、学名写法和相关图鉴资料。`;
+      return `${name}${latin ? `（${latin}）` : ""}是龟迹收录的${rank}，${parentName ? `归在${parentName}下，` : ""}本页整理了它的分类位置、学名和相关图鉴。`;
     }
 
-    return `${name}${latin ? `（${latin}）` : ""}是龟鳖目分类体系中的${rank}分类，${parentName ? `上级分类为${parentName}，` : ""}${childCount > 0 ? `当前收录 ${childCount} 个直接下级分类。` : "当前暂无直接下级分类。"}本页用于整理它的分类位置、下级条目和相关图鉴入口。`;
+    return `${name}${latin ? `（${latin}）` : ""}是龟鳖目下的${rank}，${parentName ? `上一级是${parentName}，` : ""}${childCount > 0 ? `下面有 ${childCount} 个直接下级。` : "暂无直接下级。"}点击展开可以顺着分类树往下翻。`;
   }
 
   if (entry.node.rank === "species" || entry.node.rank === "subspecies") {
@@ -147,7 +147,7 @@ export function lineageText(entry: TaxonEntry, lang: Lang) {
   const path = entry.path.map((item) => `${nodeDisplayName(item, lang)}${item.latin_name ? ` (${item.latin_name})` : ""}`);
 
   if (lang === "zh") {
-    return `分类路径为：${path.join(" > ")}。这个路径能帮助你判断该条目属于哪个科、属或物种层级，也方便和相近分类做对照。`;
+    return `分类路径：${path.join(" > ")}。顺这个路径能知道它在龟鳖目里属于哪个科、哪个属，方便和相近物种做对比。`;
   }
 
   return `Lineage: ${path.join(" > ")}. This path helps place the taxon within its family, genus, or species-level context.`;

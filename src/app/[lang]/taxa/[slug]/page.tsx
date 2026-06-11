@@ -144,8 +144,14 @@ export default async function TaxonDetailPage({ params }: PageProps) {
             {lang === "zh" ? "龟迹" : "CheloniaTrace"}
           </Link>
           <div className="flex items-center gap-3 text-sm">
-            <Link href={`/${lang}`} className="text-gray-500 transition-colors hover:text-emerald-700">
-              {lang === "zh" ? "分类树" : "Tree"}
+            <Link href={`/${lang}/tools/feeding-strategy?species=${encodeURIComponent(entry.node.latin_name || currentName)}`} className="text-gray-500 transition-colors hover:text-emerald-700">
+              {lang === "zh" ? "策略计算" : "Calculator"}
+            </Link>
+            <Link href={`/${lang}/research/species?q=${encodeURIComponent(entry.node.latin_name || currentName)}`} className="text-gray-500 transition-colors hover:text-emerald-700">
+              {lang === "zh" ? "研究依据" : "Evidence"}
+            </Link>
+            <Link href={`/${lang}/taxonomy`} className="text-gray-500 transition-colors hover:text-emerald-700">
+              {lang === "zh" ? "百科树" : "Tree"}
             </Link>
             <Link
               href={`/${lang === "zh" ? "en" : "zh"}/taxa/${entry.slug}`}
@@ -174,7 +180,7 @@ export default async function TaxonDetailPage({ params }: PageProps) {
 
             <div className="mb-8">
               <p className="mb-3 text-xs font-bold uppercase tracking-[0.24em] text-emerald-700">
-                {rankLabel(entry.node.rank, lang)} / {lang === "zh" ? "龟鳖目分类条目" : "Testudines taxon"}
+                {rankLabel(entry.node.rank, lang)} / {lang === "zh" ? "龟鳖目" : "Testudines taxon"}
               </p>
               <h1 className="text-3xl font-extrabold tracking-tight text-gray-950 sm:text-5xl">
                 {currentName}
@@ -261,7 +267,7 @@ export default async function TaxonDetailPage({ params }: PageProps) {
           {entry.node.page && (
             <section className="rounded-3xl border border-emerald-100 bg-emerald-50/70 p-6 shadow-sm sm:p-8">
               <h2 className="text-xl font-bold tracking-tight text-emerald-950">
-                {lang === "zh" ? "查看原始图鉴" : "Open the source plate"}
+                {lang === "zh" ? "查看原始图鉴页" : "Open the source plate"}
               </h2>
               <p className="mt-3 text-sm leading-7 font-medium text-emerald-900">
                 {lang === "zh"
@@ -269,11 +275,38 @@ export default async function TaxonDetailPage({ params }: PageProps) {
                   : `This entry is linked to plate page ${entry.node.page}. Return to the interactive tree to inspect the high-resolution plate and full AI guide.`}
               </p>
               <Link
-                href={`/${lang}?focus=${encodeURIComponent(entry.slug)}`}
+                href={`/${lang}/taxonomy?focus=${encodeURIComponent(entry.slug)}`}
                 className="mt-4 inline-flex rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-700"
               >
                 {lang === "zh" ? "返回图鉴树" : "Open Taxonomy Tree"}
               </Link>
+            </section>
+          )}
+
+          {(entry.node.rank === "species" || entry.node.rank === "subspecies") && (
+            <section className="rounded-3xl border border-sky-100 bg-sky-50/80 p-6 shadow-sm sm:p-8">
+              <h2 className="text-xl font-bold tracking-tight text-sky-950">
+                {lang === "zh" ? "用这个物种试算喂食策略" : "Calculate a feeding strategy for this taxon"}
+              </h2>
+              <p className="mt-3 text-sm leading-7 font-medium text-sky-900">
+                {lang === "zh"
+                  ? "以当前物种为输入，加上水温、体重和年龄，生成一次性喂食建议。要保存个体档案、长期记录和提醒，还得用龟迹 App。"
+                  : "Use this species as input for a one-off estimate based on water temperature, weight, and age. Long-term tracking requires the app."}
+              </p>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <Link
+                  href={`/${lang}/tools/feeding-strategy?species=${encodeURIComponent(entry.node.latin_name || currentName)}`}
+                  className="inline-flex rounded-full bg-sky-700 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-800"
+                >
+                  {lang === "zh" ? "打开策略计算器" : "Open calculator"}
+                </Link>
+                <Link
+                  href={`/${lang}/research/species?q=${encodeURIComponent(entry.node.latin_name || currentName)}`}
+                  className="inline-flex rounded-full border border-sky-200 bg-white px-4 py-2 text-sm font-semibold text-sky-800 transition-colors hover:border-sky-300"
+                >
+                  {lang === "zh" ? "查看研究依据" : "View evidence"}
+                </Link>
+              </div>
             </section>
           )}
 

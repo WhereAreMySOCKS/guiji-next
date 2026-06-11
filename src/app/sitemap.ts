@@ -6,32 +6,33 @@ export const dynamic = "force-dynamic";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entries = await getTaxonEntries();
 
-  const homePages: MetadataRoute.Sitemap = [
+  const staticPaths = ["", "/tools/feeding-strategy", "/research", "/research/species", "/research/sources", "/encyclopedia", "/taxonomy", "/download"];
+  const homePages: MetadataRoute.Sitemap = staticPaths.flatMap((path) => [
     {
-      url: `${SITE_URL}/zh`,
+      url: `${SITE_URL}/zh${path}`,
       lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 1,
+      changeFrequency: "weekly" as const,
+      priority: path === "" ? 1 : path === "/tools/feeding-strategy" ? 0.95 : 0.85,
       alternates: {
         languages: {
-          "zh-CN": `${SITE_URL}/zh`,
-          "en-US": `${SITE_URL}/en`,
+          "zh-CN": `${SITE_URL}/zh${path}`,
+          "en-US": `${SITE_URL}/en${path}`,
         },
       },
     },
     {
-      url: `${SITE_URL}/en`,
+      url: `${SITE_URL}/en${path}`,
       lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 1,
+      changeFrequency: "weekly" as const,
+      priority: path === "" ? 1 : path === "/tools/feeding-strategy" ? 0.9 : 0.8,
       alternates: {
         languages: {
-          "zh-CN": `${SITE_URL}/zh`,
-          "en-US": `${SITE_URL}/en`,
+          "zh-CN": `${SITE_URL}/zh${path}`,
+          "en-US": `${SITE_URL}/en${path}`,
         },
       },
     },
-  ];
+  ]);
 
   const taxonPages: MetadataRoute.Sitemap = entries.flatMap((entry) => [
     {

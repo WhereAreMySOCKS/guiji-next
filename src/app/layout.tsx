@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: '龟迹 CheloniaTrace | 全球龟鳖目图鉴',
-  description: '龟鳖目分类图鉴与 AI 智能导读平台',
+  title: '龟迹 CheloniaTrace | 龟类喂食策略计算器与研究数据库',
+  description: '龟类喂食策略试算、研究来源追溯与龟鳖目百科',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
