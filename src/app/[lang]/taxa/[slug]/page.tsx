@@ -13,7 +13,7 @@ import {
   taxonTitle,
 } from "@/lib/taxonomy";
 import { apiUrl } from "@/lib/api";
-import { nodeDisplayName, rankLabel, type Lang } from "@/lib/taxonomySlug";
+import { createTaxonSlug, nodeDisplayName, rankLabel, type Lang } from "@/lib/taxonomySlug";
 
 type PageProps = {
   params: Promise<{ lang: string; slug: string }>;
@@ -41,6 +41,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const title = taxonTitle(entry, lang);
   const description = taxonDescription(entry, lang);
   const url = localizedTaxonUrl(lang, entry.slug);
+  const ogImage = '/images/og-default.jpg';
 
   return {
     title,
@@ -58,6 +59,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     alternates: {
       canonical: url,
       languages: {
+        "x-default": `${SITE_URL}/taxa/${entry.slug}`,
         "zh-CN": localizedTaxonUrl("zh", entry.slug),
         "en-US": localizedTaxonUrl("en", entry.slug),
       },
@@ -69,11 +71,20 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       siteName: "CheloniaTrace",
       locale: lang === "zh" ? "zh_CN" : "en_US",
       type: "article",
+      images: [
+        {
+          url: ogImage,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
+      images: [ogImage],
     },
   };
 }
@@ -110,25 +121,48 @@ export default async function TaxonDetailPage({ params }: PageProps) {
     : [];
   const primaryImageUrl = entry.node.image_url || (entry.node.page ? apiUrl(`/pdf/page/${entry.node.page}`) : null);
 
+  const breadcrumbItems = entry.path.map((item, i) => ({
+    "@type": "ListItem",
+    position: i + 1,
+    name: nodeDisplayName(item, lang),
+    item: `${SITE_URL}/${lang}/taxa/${createTaxonSlug(item, 1)}`,
+  }));
+  breadcrumbItems.push({
+    "@type": "ListItem",
+    position: breadcrumbItems.length + 1,
+    name: currentName,
+    item: localizedTaxonUrl(lang, entry.slug),
+  });
+
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "Taxon",
-    name: currentName,
-    alternateName: [entry.node.name, entry.node.english_name, entry.node.latin_name].filter(Boolean),
-    taxonRank: entry.node.rank,
-    url: localizedTaxonUrl(lang, entry.slug),
-    isPartOf: {
-      "@type": "Dataset",
-      name: lang === "zh" ? "龟迹龟鳖目分类数据库" : "CheloniaTrace Testudines Taxonomy Database",
-      description:
-        lang === "zh"
-          ? "龟迹（CheloniaTrace）全球龟鳖目（Testudines）分类与文献数据库，涵盖系统发育树、AI 智能导读及权威图鉴内容，持续更新中。"
-          : "CheloniaTrace global Testudines taxonomy and literature database, covering a complete phylogenetic tree, AI-powered guide summaries, and authoritative plate references — continuously updated.",
-      url: `${SITE_URL}/${lang}`,
-      license: "https://creativecommons.org/licenses/by/4.0/",
-      creator: { "@type": "Organization", "name": "CheloniaTrace" },
-      inLanguage: lang === "zh" ? "zh-CN" : "en-US",
-    },
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        name: lang === "zh" ? "分类路径" : "Taxonomy breadcrumb",
+        description: entry.path.map((item) => nodeDisplayName(item, lang)).join(" > "),
+        itemListElement: breadcrumbItems,
+      },
+      {
+        "@type": "Taxon",
+        name: currentName,
+        alternateName: [entry.node.name, entry.node.english_name, entry.node.latin_name].filter(Boolean),
+        taxonRank: entry.node.rank,
+        url: localizedTaxonUrl(lang, entry.slug),
+        isPartOf: {
+          "@type": "Dataset",
+          name: lang === "zh" ? "龟迹龟鳖目分类数据库" : "CheloniaTrace Testudines Taxonomy Database",
+          description:
+            lang === "zh"
+              ? "龟迹（CheloniaTrace）全球龟鳖目（Testudines）分类与文献数据库，涵盖系统发育树、AI 智能导读及权威图鉴内容，持续更新中。"
+              : "CheloniaTrace global Testudines taxonomy and literature database, covering a complete phylogenetic tree, AI-powered guide summaries, and authoritative plate references — continuously updated.",
+          url: `${SITE_URL}/${lang}`,
+          license: "https://creativecommons.org/licenses/by/4.0/",
+          creator: { "@type": "Organization", "name": "CheloniaTrace" },
+          inLanguage: lang === "zh" ? "zh-CN" : "en-US",
+        },
+      },
+    ],
   };
 
   return (

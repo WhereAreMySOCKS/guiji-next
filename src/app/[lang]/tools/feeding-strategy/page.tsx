@@ -38,8 +38,35 @@ export default async function FeedingStrategyToolPage({
   const query = searchParams ? await searchParams : {};
   const labels = copy[lang];
 
+  const webAppSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: lang === "zh" ? "龟迹智能喂食策略计算器" : "CheloniaTrace Feeding Strategy Calculator",
+    url: `https://www.guiji.online/${lang}/tools/feeding-strategy`,
+    applicationCategory: "Animal Husbandry",
+    operatingSystem: "Web",
+    description: lang === "zh"
+      ? "根据物种、水温、年龄和体重，一键计算基于研究数据的科学喂食建议。"
+      : "Calculate research-backed turtle feeding advice based on species, temperature, age, and weight.",
+    browserRequirements: "Requires JavaScript",
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "USD",
+    },
+    inLanguage: lang === "zh" ? "zh-CN" : "en-US",
+    author: {
+      "@type": "Organization",
+      name: "CheloniaTrace",
+    },
+  };
+
   return (
     <main className="min-h-screen bg-slate-50 text-slate-950">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(webAppSchema) }}
+      />
       <SiteHeader lang={lang} active="tool" />
       <section className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
         <div className="mb-6">

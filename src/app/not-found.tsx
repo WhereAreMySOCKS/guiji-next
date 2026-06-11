@@ -1,4 +1,11 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "404 页面未找到 | 龟迹 CheloniaTrace",
+  description: "请求的页面不存在或已被移除。返回龟迹首页继续浏览。",
+  robots: { index: false, follow: true },
+};
 
 export default function NotFound() {
   return (
