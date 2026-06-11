@@ -19,6 +19,8 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   const dict = dictionaries[lang];
   const baseUrl = 'https://www.guiji.online';
 
+  const ogImage = '/images/og-default.jpg';
+
   return {
     title: dict.title,
     description: dict.description,
@@ -28,6 +30,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     alternates: {
       canonical: `${baseUrl}/${lang}`,
       languages: {
+        'x-default': baseUrl,
         'zh-CN': `${baseUrl}/zh`,
         'en-US': `${baseUrl}/en`,
       },
@@ -39,11 +42,20 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
       siteName: 'CheloniaTrace',
       locale: lang === 'zh' ? 'zh_CN' : 'en_US',
       type: 'website',
+      images: [
+        {
+          url: ogImage,
+          width: 1200,
+          height: 630,
+          alt: dict.title,
+        },
+      ],
     },
     twitter: {
       card: 'summary_large_image',
       title: dict.title,
       description: dict.description,
+      images: [ogImage],
     },
   };
 }
