@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Lang } from "@/lib/taxonomySlug";
+import HeaderContactButton from "./HeaderContactButton";
 
 type Active = "home" | "tool" | "taxonomy" | "download";
 
@@ -36,9 +37,10 @@ export default function SiteHeader({ lang, active = "home" }: { lang: Lang; acti
         </nav>
 
         <div className="flex items-center gap-2">
+          <HeaderContactButton lang={lang} />
           <Link
             href={`/${lang === "zh" ? "en" : "zh"}`}
-            className="rounded-full border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition-colors hover:border-emerald-300 hover:text-emerald-700"
+            className="inline-flex h-10 items-center rounded-full border border-slate-200 px-3 text-sm font-semibold text-slate-600 transition-colors hover:border-emerald-300 hover:text-emerald-700"
           >
             {lang === "zh" ? "EN" : "中文"}
           </Link>
