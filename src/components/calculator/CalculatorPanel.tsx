@@ -51,7 +51,6 @@ export default function CalculatorPanel({
   const [selectedSpecies, setSelectedSpecies] = useState<TaxonomySpeciesSuggestion | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [error, setError] = useState("");
-  const [unsupportedOpen, setUnsupportedOpen] = useState(false);
   const requestIdRef = useRef(0);
   const autoSubmitRef = useRef(false);
 
@@ -99,14 +98,6 @@ export default function CalculatorPanel({
   const runPreview = useCallback(async () => {
     const canonicalSpecies = (selectedSpecies?.latin_name || selectedSpecies?.name_zh || speciesName).trim();
     if (!canonicalSpecies) return;
-    if (!isSupportedSpecies(canonicalSpecies, selectedSpecies)) {
-      setStatus("idle");
-      setError("");
-      setResult(null);
-      setResearch(null);
-      setUnsupportedOpen(true);
-      return;
-    }
 
     const city = getCity(cityId);
     setStatus("loading");
@@ -147,10 +138,6 @@ export default function CalculatorPanel({
 
     const canonicalSpecies = (selectedSpecies?.latin_name || selectedSpecies?.name_zh || speciesName).trim();
     if (redirectOnSubmit) {
-      if (!isSupportedSpecies(canonicalSpecies, selectedSpecies)) {
-        setUnsupportedOpen(true);
-        return;
-      }
       const params = new URLSearchParams({
         calculate: "1",
         species: canonicalSpecies,
@@ -170,12 +157,16 @@ export default function CalculatorPanel({
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-5">
       <div className="flex items-start justify-between gap-4">
-        <div>
+        <div className="min-w-0">
           <p className="text-sm font-bold uppercase text-emerald-700">{copy[lang].eyebrow}</p>
           <h2 className="mt-2 text-2xl font-bold text-slate-950">{copy[lang].title}</h2>
           {!compact && copy[lang].desc && <p className="mt-2 text-sm leading-6 text-slate-600">{copy[lang].desc}</p>}
         </div>
-        <span className="material-symbols-outlined hidden text-3xl text-sky-700 sm:block">calculate</span>
+        <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-center">
+          <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700 shadow-sm">
+            {copy[lang].limitedBadge}
+          </span>
+        </div>
       </div>
 
       <form onSubmit={onSubmit} className="mt-5 grid gap-4">
@@ -266,8 +257,6 @@ export default function CalculatorPanel({
         <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>
       )}
 
-      {unsupportedOpen && <UnsupportedSpeciesDialog lang={lang} onClose={() => setUnsupportedOpen(false)} />}
-
       {result && (
         <section className="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
           <div className="flex flex-wrap items-center gap-2">
@@ -312,38 +301,6 @@ export default function CalculatorPanel({
           <EvidenceList evidence={research.evidence} lang={lang} limit={3} />
         </section>
       )}
-    </div>
-  );
-}
-
-function UnsupportedSpeciesDialog({ lang, onClose }: { lang: Lang; onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 py-6" role="presentation">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="unsupported-species-title"
-        className="w-full max-w-sm rounded-lg border border-slate-200 bg-white p-5 shadow-xl"
-      >
-        <div className="flex items-start gap-3">
-          <span className="material-symbols-outlined text-2xl text-amber-600" aria-hidden="true">
-            info
-          </span>
-          <div>
-            <h3 id="unsupported-species-title" className="text-lg font-bold text-slate-950">
-              {copy[lang].unsupportedTitle}
-            </h3>
-            <p className="mt-2 text-sm leading-6 text-slate-600">{copy[lang].unsupportedMessage}</p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="mt-5 h-11 w-full rounded-lg bg-emerald-700 px-4 text-sm font-bold text-white transition-colors hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-200"
-        >
-          {copy[lang].unsupportedClose}
-        </button>
-      </div>
     </div>
   );
 }
@@ -411,6 +368,7 @@ const copy = {
   zh: {
     eyebrow: "策略定制",
     title: "今天该怎么喂？",
+    limitedBadge: "限时使用",
     desc: "",
     species: "物种",
     speciesPlaceholder: "例如：中华草龟 / Mauremys reevesii",
@@ -434,18 +392,16 @@ const copy = {
     frequency: "喂食频次",
     portion: "单次量",
     next: "下次建议时间",
-    appNote: "不想次次都一条一条填？试试龟迹 App 。",
+    appNote: "App 可保存档案、记录喂食、提醒下次投喂，并随体重和季节刷新策略。",
     evidence: "这条建议参考了哪些资料",
     moreEvidence: "查看完整依据",
     searching: "正在匹配物种...",
     selected: "已匹配到：",
-    unsupportedTitle: "暂未支持这个物种",
-    unsupportedMessage: "目前网页端仅支持地摊三杰的策略哦～更多高级功能请关注APP。",
-    unsupportedClose: "我知道了",
   },
   en: {
     eyebrow: "Public estimate",
     title: "Turtle Feeding Strategy Calculator",
+    limitedBadge: "Limited-time access",
     desc: "Enter species, water temperature, age, and weight for a one-off feeding estimate.",
     species: "Species",
     speciesPlaceholder: "Example: Mauremys reevesii",
@@ -469,19 +425,15 @@ const copy = {
     frequency: "Frequency",
     portion: "Portion",
     next: "Next time",
-    appNote: "Web results are one-off references. Profiles, records, reminders, and refreshes require the app.",
+    appNote: "The app saves profiles, logs feeding, sends reminders, and refreshes strategies as weight and seasons change.",
     evidence: "Related evidence",
     moreEvidence: "More",
     searching: "Searching species...",
     selected: "Matched species:",
-    unsupportedTitle: "Species not supported yet",
-    unsupportedMessage: "The web calculator currently supports Reeves' turtle, red-eared slider, and Chinese stripe-necked turtle. Follow the app for more advanced features.",
-    unsupportedClose: "Got it",
   },
 };
 
 const DEFAULT_CITY_ID = "shanghai";
-
 const CITY_OPTIONS = [
   { id: "shanghai", nameZh: "上海", nameEn: "Shanghai", lat: 31.23, lon: 121.47, timezoneOffset: 480 },
   { id: "beijing", nameZh: "北京", nameEn: "Beijing", lat: 39.9, lon: 116.41, timezoneOffset: 480 },
@@ -495,40 +447,12 @@ const CITY_OPTIONS = [
   { id: "chongqing", nameZh: "重庆", nameEn: "Chongqing", lat: 29.56, lon: 106.55, timezoneOffset: 480 },
 ] as const;
 
-const SUPPORTED_SPECIES_ALIASES = [
-  ["中华草龟", "草龟", "mauremys reevesii"],
-  ["巴西龟", "红耳彩龟", "红耳龟", "trachemys scripta elegans"],
-  ["花龟", "中华花龟", "mauremys sinensis"],
-];
-
 function normalizeCityId(value: string) {
   return CITY_OPTIONS.some((city) => city.id === value) ? value : DEFAULT_CITY_ID;
 }
 
 function getCity(value: string) {
   return CITY_OPTIONS.find((city) => city.id === value) || CITY_OPTIONS[0];
-}
-
-function isSupportedSpecies(speciesName: string, selectedSpecies: TaxonomySpeciesSuggestion | null) {
-  const candidates = [
-    speciesName,
-    selectedSpecies?.latin_name,
-    selectedSpecies?.name_zh,
-    selectedSpecies?.name_en,
-    selectedSpecies?.english_name,
-    selectedSpecies?.name,
-    selectedSpecies?.slug,
-  ]
-    .filter(Boolean)
-    .map((value) => normalizeSpeciesText(String(value)));
-
-  return SUPPORTED_SPECIES_ALIASES.some((aliases) =>
-    aliases.some((alias) => candidates.some((candidate) => candidate === normalizeSpeciesText(alias))),
-  );
-}
-
-function normalizeSpeciesText(value: string) {
-  return value.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
 function displaySpeciesName(item: TaxonomySpeciesSuggestion, lang: Lang) {
