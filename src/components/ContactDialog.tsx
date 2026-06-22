@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { submitFeedback } from "@/lib/publicTools";
 import type { Lang } from "@/lib/taxonomySlug";
-
-const CONTACT_EMAIL = "paulmac1204@gmail.com";
 
 type QrChannel = {
   key: string;
@@ -29,23 +28,44 @@ const CONTACT_QR_CHANNELS: QrChannel[] = [
 ];
 
 export function ContactDialog({ lang, onClose }: { lang: Lang; onClose: () => void }) {
-  const [copied, setCopied] = useState(false);
   const [activeQr, setActiveQr] = useState<QrChannel | null>(null);
-  const [hoveredQr, setHoveredQr] = useState<string | null>(null); // 新增：用于追踪当前悬浮的按钮
+  const [hoveredQr, setHoveredQr] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [message, setMessage] = useState("");
+  const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
+  const [error, setError] = useState("");
 
   const labels = copy[lang];
-  const mailHref = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(labels.emailSubject)}`;
 
-  // 确保 Portal 只在客户端渲染，避免 Next.js 水合报错
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  async function copyEmail() {
-    await navigator.clipboard.writeText(CONTACT_EMAIL);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1800);
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const trimmed = message.trim();
+    if (trimmed.length < 2) {
+      setError(labels.shortError);
+      setStatus("error");
+      return;
+    }
+    setStatus("submitting");
+    setError("");
+    try {
+      const formData = new FormData();
+      formData.append("message", trimmed);
+      formData.append("source_platform", "web");
+      formData.append("source_page", window.location.pathname);
+      formData.append("locale", lang);
+      formData.append("app_version", "guiji-next");
+      formData.append("device_summary", navigator.userAgent);
+      await submitFeedback(formData);
+      setStatus("success");
+      setMessage("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : labels.submitError);
+      setStatus("error");
+    }
   }
 
   if (!mounted) return null;
@@ -83,29 +103,38 @@ export function ContactDialog({ lang, onClose }: { lang: Lang; onClose: () => vo
         </div>
 
         <div className="px-4 py-4">
-          <div className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 p-2.5 ring-1 ring-inset ring-slate-200">
-            <div className="flex min-w-0 items-center gap-3">
-              <span className="material-symbols-outlined shrink-0 text-[20px] text-emerald-700" aria-hidden="true">
-                alternate_email
+          <form onSubmit={submit} className="rounded-lg bg-slate-50 p-3 ring-1 ring-inset ring-slate-200">
+            <label htmlFor="feedback-message" className="text-[10px] font-bold uppercase text-slate-500">
+              {labels.feedbackLabel}
+            </label>
+            <textarea
+              id="feedback-message"
+              value={message}
+              onChange={(event) => {
+                setMessage(event.target.value);
+                if (status !== "submitting") setStatus("idle");
+              }}
+              maxLength={2000}
+              rows={4}
+              placeholder={labels.placeholder}
+              className="mt-2 w-full resize-none rounded-md border border-slate-200 bg-white px-3 py-2 text-sm leading-6 text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+            />
+            <div className="mt-2 flex items-center justify-between gap-3">
+              <span className={`text-xs font-semibold ${status === "error" ? "text-red-600" : "text-emerald-700"}`}>
+                {status === "success" ? labels.submitSuccess : status === "error" ? error : ""}
               </span>
-              <div className="min-w-0">
-                <p className="text-[10px] font-bold uppercase text-slate-500">{labels.emailLabel}</p>
-                <a href={mailHref} className="block truncate text-sm font-bold text-slate-950 transition-colors hover:text-emerald-700">
-                  {CONTACT_EMAIL}
-                </a>
-              </div>
-            </div>
             <button
-              type="button"
-              onClick={copyEmail}
-              className="flex h-7 shrink-0 cursor-pointer items-center justify-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 transition-colors hover:border-emerald-300 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+              type="submit"
+              disabled={status === "submitting" || message.trim().length < 2}
+              className="flex h-8 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-md bg-emerald-700 px-3 text-xs font-semibold text-white transition-colors hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-slate-300"
             >
               <span className="material-symbols-outlined text-[14px]" aria-hidden="true">
-                {copied ? "check_circle" : "content_copy"}
+                {status === "success" ? "check_circle" : "send"}
               </span>
-              {copied ? labels.emailCopied : labels.copyEmail}
+              {status === "submitting" ? labels.submitting : labels.submit}
             </button>
-          </div>
+            </div>
+          </form>
 
           <div className="mt-4 grid grid-cols-2 gap-3">
             {CONTACT_QR_CHANNELS.map((channel) => (
@@ -201,23 +230,29 @@ export function ContactDialog({ lang, onClose }: { lang: Lang; onClose: () => vo
 
 const copy = {
   zh: {
-    contactEyebrow: "联系开发者",
-    contactDesc: "开发者是一个刚毕业的臭研究生，啥都可以聊",
-    emailLabel: "邮箱",
-    emailSubject: "龟迹项目交流",
-    copyEmail: "复制",
-    emailCopied: "已复制",
+    contactEyebrow: "反馈给开发者",
+    contactDesc: "遇到问题、想提建议，直接写在这里就行。",
+    feedbackLabel: "反馈内容",
+    placeholder: "请描述你遇到的问题或建议...",
+    submit: "提交",
+    submitting: "提交中...",
+    submitSuccess: "已收到，感谢你帮龟迹变好。",
+    submitError: "提交失败，请稍后再试。",
+    shortError: "请至少输入 2 个字。",
     qrPending: "待上传",
-    closeContact: "关闭联系面板",
+    closeContact: "关闭反馈面板",
   },
   en: {
-    contactEyebrow: "Contact",
-    contactDesc: "Just a recent grad building this. Feel free to reach out and chat about anything!",
-    emailLabel: "Email",
-    emailSubject: "CheloniaTrace Inquiry",
-    copyEmail: "Copy",
-    emailCopied: "Copied",
+    contactEyebrow: "Send feedback",
+    contactDesc: "Found an issue or have an idea? Send it straight to the project inbox.",
+    feedbackLabel: "Feedback",
+    placeholder: "Describe the issue or suggestion...",
+    submit: "Submit",
+    submitting: "Submitting...",
+    submitSuccess: "Received. Thanks for helping improve CheloniaTrace.",
+    submitError: "Submission failed. Please try again.",
+    shortError: "Please enter at least 2 characters.",
     qrPending: "Pending",
-    closeContact: "Close contact panel",
+    closeContact: "Close feedback panel",
   },
 };

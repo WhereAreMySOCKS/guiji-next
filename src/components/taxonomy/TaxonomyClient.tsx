@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createTaxonSlug } from '@/lib/taxonomySlug';
+import { ContactDialog } from '@/components/ContactDialog';
 import ImageViewer from './ImageViewer';
 import TreeNode from './TreeNode';
 import type { ExtendedNode } from './TreeNode';
@@ -80,8 +81,8 @@ export default function TaxonomyClient({ initialTreeData, lang }: { initialTreeD
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const [notFoundAlert, setNotFoundAlert] = useState(false);
 
-  const [emailCopied, setEmailCopied] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
 
   const treeContainerRef = useRef<HTMLDivElement>(null);
   const slugById = useMemo(() => buildSlugMap(initialTreeData), [initialTreeData]);
@@ -120,18 +121,9 @@ export default function TaxonomyClient({ initialTreeData, lang }: { initialTreeD
     }, 150);
   }, [initialTreeData, lang]);
 
-  const handleEmailContact = (e: React.MouseEvent) => {
-    e.preventDefault();
-    const myEmail = "paulmac1204@gmail.com";
-    navigator.clipboard.writeText(myEmail).then(() => {
-      setEmailCopied(true);
-      setTimeout(() => setEmailCopied(false), 2000);
-    });
-    window.location.href = `mailto:${myEmail}?subject=${encodeURIComponent(lang === 'zh' ? '龟迹项目交流' : 'CheloniaTrace Inquiry')}`;
-  };
-
   return (
     <div className="min-h-screen flex flex-col relative bg-[#f8f9fa] overflow-x-hidden text-[#191c1d]">
+      {contactOpen && <ContactDialog lang={lang} onClose={() => setContactOpen(false)} />}
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm">
         <div className="flex justify-between items-center h-14 sm:h-16 px-4 sm:px-6 md:px-12 w-full">
           <div className="flex items-center gap-3">
@@ -141,24 +133,11 @@ export default function TaxonomyClient({ initialTreeData, lang }: { initialTreeD
           <div className="flex items-center gap-4">
 
             <button
-              onClick={handleEmailContact}
-              className={`flex items-center gap-1.5 text-sm font-medium transition-all duration-300 hidden sm:flex px-2 py-1 rounded-md cursor-pointer ${
-                emailCopied
-                  ? 'text-emerald-500 bg-emerald-50 scale-95'
-                  : 'text-gray-500 hover:text-emerald-600 hover:bg-gray-50 active:scale-95'
-              }`}
+              onClick={() => setContactOpen(true)}
+              className="hidden cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-gray-500 transition-all duration-300 hover:bg-gray-50 hover:text-emerald-600 active:scale-95 sm:flex"
             >
-              {emailCopied ? (
-                <>
-                  <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                  {lang === 'zh' ? '邮箱已复制' : 'Copied!'}
-                </>
-              ) : (
-                <>
-                  <span className="material-symbols-outlined text-[18px]">mail</span>
-                  {lang === 'zh' ? '联系我' : 'Email Me'}
-                </>
-              )}
+              <span className="material-symbols-outlined text-[18px]">feedback</span>
+              {lang === 'zh' ? '反馈' : 'Feedback'}
             </button>
 
             <a href="https://iucn-tftsg.org/checklist/" target="_blank" rel="noreferrer" className="text-sm font-medium text-gray-500 hover:text-emerald-600 transition-colors hidden sm:block">
@@ -178,11 +157,11 @@ export default function TaxonomyClient({ initialTreeData, lang }: { initialTreeD
                   <div className="fixed inset-0 z-10" onClick={() => setMobileMenuOpen(false)}></div>
                   <div className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-xl border border-gray-100 py-2 min-w-[160px] z-20">
                     <button
-                      onClick={(e) => { handleEmailContact(e); setMobileMenuOpen(false); }}
+                      onClick={() => { setContactOpen(true); setMobileMenuOpen(false); }}
                       className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-600 hover:bg-gray-50 hover:text-emerald-600 transition-colors text-left cursor-pointer"
                     >
-                      <span className="material-symbols-outlined text-[18px]">mail</span>
-                      {lang === 'zh' ? '联系我' : 'Email Me'}
+                      <span className="material-symbols-outlined text-[18px]">feedback</span>
+                      {lang === 'zh' ? '反馈' : 'Feedback'}
                     </button>
                     <a
                       href="https://iucn-tftsg.org/checklist/"

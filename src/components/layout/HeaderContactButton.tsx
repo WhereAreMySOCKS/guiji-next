@@ -6,7 +6,7 @@ import type { Lang } from "@/lib/taxonomySlug";
 
 export default function HeaderContactButton({ lang }: { lang: Lang }) {
   const [open, setOpen] = useState(false);
-  const label = lang === "zh" ? "联系我" : "Contact";
+  const label = lang === "zh" ? "反馈" : "Feedback";
 
   return (
     <div className="relative">

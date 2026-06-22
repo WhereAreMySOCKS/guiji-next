@@ -61,6 +61,10 @@ export async function submitWaitlist(req: PublicWaitlistRequest) {
   return postJson<{ id: string }>("/public/waitlist", req);
 }
 
+export async function submitFeedback(formData: FormData) {
+  return postForm<{ id: string }>("/public/feedback", formData);
+}
+
 export async function fetchResearchForSpecies(speciesName: string): Promise<ResearchSpeciesDetail | null> {
   const res = await fetch(apiUrl(`/research/species/${encodeURIComponent(speciesName)}`));
   if (!res.ok) return null;
@@ -79,6 +83,26 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    let message = "请求失败，请稍后再试。";
+    try {
+      const data = await res.json();
+      if (typeof data.detail === "string") message = data.detail;
+    } catch {
+      // ignore malformed error payloads
+    }
+    throw new Error(message);
+  }
+
+  return res.json();
+}
+
+async function postForm<T>(path: string, body: FormData): Promise<T> {
+  const res = await fetch(apiUrl(path), {
+    method: "POST",
+    body,
   });
 
   if (!res.ok) {
