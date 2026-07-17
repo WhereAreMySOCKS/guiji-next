@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.guiji.online"),
   title: '龟迹 CheloniaTrace | 龟类喂食策略计算器与研究数据库',
   description: '龟类喂食策略试算、研究来源追溯与龟鳖目百科',
 };

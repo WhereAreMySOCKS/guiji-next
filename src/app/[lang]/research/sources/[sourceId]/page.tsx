@@ -9,6 +9,7 @@ import { getResearchSourceDetail } from "@/lib/research";
 import { publicResearchDomains } from "@/lib/researchDisplay";
 import { pageMetadata } from "@/lib/seo";
 import type { Lang } from "@/lib/taxonomySlug";
+import { safeExternalUrl } from "@/lib/security";
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string; sourceId: string }> }): Promise<Metadata> {
   const { lang, sourceId } = await params;
@@ -80,12 +81,13 @@ export default async function ResearchSourceDetailPage({
 }
 
 function Info({ label, value, href }: { label: string; value?: string | null; href?: string | null }) {
+  const safeHref = safeExternalUrl(href);
   return (
     <div className="min-w-0 rounded-lg bg-slate-50 p-3">
       <dt className="text-xs font-bold uppercase text-slate-400">{label}</dt>
       <dd className="mt-1 break-words font-semibold text-slate-800">
-        {href && value ? (
-          <a href={href} target="_blank" rel="noreferrer" className="text-sky-700 hover:text-sky-900">
+        {safeHref && value ? (
+          <a href={safeHref} target="_blank" rel="noopener noreferrer" className="text-sky-700 hover:text-sky-900">
             {value}
           </a>
         ) : (

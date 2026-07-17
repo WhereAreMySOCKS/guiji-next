@@ -18,6 +18,12 @@ export default function SiteFooter({ lang }: { lang: Lang }) {
           <Link href={`/${lang}/encyclopedia`} className="hover:text-emerald-700">
             {lang === "zh" ? "百科" : "Encyclopedia"}
           </Link>
+          <Link href={`/${lang}/terms`} className="hover:text-emerald-700">
+            {lang === "zh" ? "用户协议" : "Terms"}
+          </Link>
+          <Link href={`/${lang}/privacy`} className="hover:text-emerald-700">
+            {lang === "zh" ? "隐私政策" : "Privacy"}
+          </Link>
         </div>
       </div>
     </footer>

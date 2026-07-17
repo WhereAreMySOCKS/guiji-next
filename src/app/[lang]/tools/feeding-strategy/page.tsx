@@ -4,6 +4,7 @@ import SiteFooter from "@/components/layout/SiteFooter";
 import SiteHeader from "@/components/layout/SiteHeader";
 import { pageMetadata } from "@/lib/seo";
 import type { Lang } from "@/lib/taxonomySlug";
+import { safeJsonLd } from "@/lib/security";
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
@@ -65,7 +66,7 @@ export default async function FeedingStrategyToolPage({
     <main className="min-h-screen bg-slate-50 text-slate-950">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(webAppSchema) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(webAppSchema) }}
       />
       <SiteHeader lang={lang} active="tool" />
       <section className="mx-auto max-w-5xl px-4 py-10 sm:px-6">

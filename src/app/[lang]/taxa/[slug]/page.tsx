@@ -14,6 +14,7 @@ import {
 } from "@/lib/taxonomy";
 import { apiUrl } from "@/lib/api";
 import { createTaxonSlug, nodeDisplayName, rankLabel, type Lang } from "@/lib/taxonomySlug";
+import { safeJsonLd } from "@/lib/security";
 
 type PageProps = {
   params: Promise<{ lang: string; slug: string }>;
@@ -169,7 +170,7 @@ export default async function TaxonDetailPage({ params }: PageProps) {
     <main className="min-h-screen bg-[#f8f9fa] text-[#191c1d]">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
       />
 
       <header className="border-b border-gray-200 bg-white/90 backdrop-blur">
